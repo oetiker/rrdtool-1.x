@@ -13,6 +13,7 @@ TESTS = $(script_tests) compat-cloexec rrd-open-security tune-legacy-version tun
 	client-header-standalone tune-legacy-aberrant
 
 script_tests += security-rrdcached-response-bounds
+script_tests += update-time-range
 
 EXTRA_DIST = Makefile.am \
 	functions $(script_tests) \
@@ -104,6 +105,11 @@ endif
 endif
 
 if HAVE_STATIC_LIBRRD
+check_PROGRAMS += numeric-limits
+TESTS += numeric-limits
+numeric_limits_SOURCES = test_numeric_limits.c
+numeric_limits_LDFLAGS = -static
+numeric_limits_LDADD = ${top_builddir}/src/librrd.la
 check_PROGRAMS += fetch-empty-security
 TESTS += fetch-empty-security
 fetch_empty_security_SOURCES = test_fetch_empty_security.c

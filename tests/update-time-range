@@ -1,0 +1,24 @@
+#!/bin/bash
+
+. "$(dirname "$0")/functions"
+
+# update times that do not fit in time_t must be refused, not converted.
+[ -n "$RRDCACHED_ADDRESS" ] && exit 77
+BUILD="$BUILDDIR/$(basename "$0")"
+rm -f "${BUILD}.rrd"
+
+$RRDTOOL create "${BUILD}.rrd" --start 900000000 --step 60 \
+  DS:value:GAUGE:120:U:U RRA:AVERAGE:0.5:1:2 || fail $? create
+
+for stamp in NaN inf 1e100 9223372036854775808; do
+  $RRDTOOL update "${BUILD}.rrd" "$stamp:1" >"${BUILD}.out" 2>&1
+  status=$?
+  [ "$status" -ne 0 ] && [ "$status" -lt 128 ] || fail 1 "update at $stamp: exit status $status"
+  grep -q "update time is out of range" "${BUILD}.out" ||
+    fail 1 "update at $stamp was not diagnosed: $(cat "${BUILD}.out")"
+done
+ok "reject unrepresentable update times"
+$RRDTOOL update "${BUILD}.rrd" 900000060.5:1 900000060.75:2 900000060.999999:3
+report "fractional update times still work"
+
+rm -f "${BUILD}.rrd" "${BUILD}.out"
