@@ -107,6 +107,11 @@ endif
 endif
 
 if HAVE_STATIC_LIBRRD
+check_PROGRAMS += rpn-failures
+TESTS += rpn-failures
+rpn_failures_SOURCES = test_rpn_failures.c
+rpn_failures_LDFLAGS = -static
+rpn_failures_LDADD = ${top_builddir}/src/librrd.la
 check_PROGRAMS += fetch-empty-security
 TESTS += fetch-empty-security
 fetch_empty_security_SOURCES = test_fetch_empty_security.c
