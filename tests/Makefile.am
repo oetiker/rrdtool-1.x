@@ -164,6 +164,10 @@ graph_security_LDADD = ${top_builddir}/src/librrd.la
 
 script_tests += security-tune-failures-window security-dump-failures-window
 CLEANFILES += first-last-error.out
+# written by tests that master added after distcheck last passed
+CLEANFILES += tune-per-rra-*.out tune-value-parse-*.out number-special-values-*.out \
+	cached/tune-per-rra-*.out cached/tune-value-parse-*.out \
+	cached/number-special-values-*.out
 CLEANFILES += graph-incomplete-file.err cached/graph-incomplete-file.err
 
 # the rrdcached test styles make cached/ in a separate build directory
