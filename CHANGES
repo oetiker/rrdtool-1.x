@@ -306,6 +306,42 @@ Bugfixes
 * rrdcached started through systemd socket activation (`rrdcached.socket`)
   no longer crashes with a segmentation fault when the first client
   connects. (#1387) @emwgit
+* Building from the release tarball in a separate directory used the
+  release machine's `rrd_config.h` instead of the one configure wrote; the
+  tarball no longer contains it. @somethingwithproof
+* `make distcheck` passes, and `make uninstall` removes what `make install`
+  put in place, including the Perl, Python, Ruby and Tcl bindings (the Perl
+  modules by their packlist, the Python module by the installed wheel's
+  record), the `rrdcreate` and `rrdinfo` links and the HTML index. It
+  leaves other packages in the same directories alone, as well as Perl's
+  shared `perllocal.pod`. @somethingwithproof
+* `make install` fails when the Perl, Ruby or Python binding was built but
+  cannot be installed; it used to report success. The Ruby binding is
+  installed under `--prefix` (`$prefix/lib/ruby`, below `DESTDIR`) instead
+  of in the Ruby interpreter's own site directory; use
+  `--enable-ruby-site-install` for the old place. @somethingwithproof
+* Packagers: `--disable-perl-site-install` and `--disable-ruby-site-install`
+  used to select the site install, like their `--enable-` forms; they now
+  keep the default (below `--prefix`). `--enable-tcl-site` works, and
+  `--localedir` and `--htmldir` are honoured (the HTML pages go to
+  `--htmldir` when it is given, the text pages to `RRDTXTDIR`). The
+  systemd units are installed only when rrdcached is built. Versioned
+  Lua interpreters (`lua5.4`) are found. @somethingwithproof
+* New `--enable-python-site-install` puts the Python module into the
+  interpreter's `site-packages` below the prefix instead of
+  `$libdir/python3/site-packages`, and `make site-python-install` installs
+  the wheel `make` built. configure skips the Python module with a warning
+  when setuptools, wheel or pip is missing. The Perl module builds
+  standalone against an installed librrd again. @somethingwithproof
+* configure uses `PKG_CONFIG` (and a cross `$host-pkg-config`) and keeps
+  your `CFLAGS` after its warning flags, so `CFLAGS=-std=c11` and
+  `make CFLAGS=...` take effect; it keeps library order for static links,
+  adds `Libs.private` to `librrd.pc` and requires a librados that links.
+  `--disable-rrd_restore` builds keep exporting `rrd_restore`, which
+  reports the missing feature. `make check` skips the tests of features
+  that were not built instead of failing them. @somethingwithproof
+* The PDF pages in a release tarball are reproducible with any
+  Ghostscript 9.55 or later, not only Debian's. @somethingwithproof
 
 Features
 --------
