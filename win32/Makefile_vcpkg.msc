@@ -36,7 +36,7 @@ THIRD_PARTY_LIB = /LIBPATH:$(ARCH_PATH)\lib \
         libpng16.lib libxml2.lib \
         glib-2.0.lib gobject-2.0.lib \
         pango-1.0.lib pangocairo-1.0.lib cairo.lib \
-        Ws2_32.lib zlib.lib
+        Ws2_32.lib z.lib
 
 RRD_LIB_OBJ_LIST = \
         $(TOP)/src/compat-cloexec.obj \
