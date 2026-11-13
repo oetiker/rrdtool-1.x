@@ -3,7 +3,7 @@
 #include <errno.h>
 #include <limits.h>
 
-static int allocation, fail_at, live, short_read;
+static int allocation, fail_at, live, short_read, seeks, fail_seek_at;
 
 static void *test_malloc(size_t size)
 {
@@ -39,7 +39,7 @@ static int test_seek(rrd_file_t *file, off_t offset, int whence)
     (void) file;
     (void) offset;
     (void) whence;
-    return 0;
+    return ++seeks == fail_seek_at ? -1 : 0;
 }
 
 static ssize_t test_read(rrd_file_t *file, void *buffer, size_t count)
@@ -102,6 +102,17 @@ int main(void)
                     fail_at, status, live, rrd_get_error());
             return 1;
         }
+    }
+    /* The second seek writes the smoothed values back. */
+    fail_at = 0;
+    seeks = 0;
+    fail_seek_at = 2;
+    rrd_clear_error();
+    status = apply_smoother(&rrd, 0, 0, NULL);
+    if (status != -1 || live || !strstr(rrd_get_error(), "seek to pos")) {
+        fprintf(stderr, "smoother write-back seek: status %d, live %d: %s\n",
+                status, live, rrd_get_error());
+        return 1;
     }
     return 0;
 }

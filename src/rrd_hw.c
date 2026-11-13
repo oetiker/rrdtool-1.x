@@ -337,6 +337,7 @@ int apply_smoother(
                      rrd->stat_head->ds_cnt * sizeof(pdp_prep_t), SEEK_SET)) {
             rrd_set_error("apply_smoother: seek to cdp_prep failed");
             free(rrd_values);
+            free(baseline);
             return -1;
         }
         if (rrd_write(rrd_file, rrd->cdp_prep,
@@ -346,6 +347,7 @@ int apply_smoother(
                           (rrd->stat_head->ds_cnt))) {
             rrd_set_error("apply_smoother: cdp_prep write failed");
             free(rrd_values);
+            free(baseline);
             return -1;
         }
 #endif
@@ -357,6 +359,7 @@ int apply_smoother(
     if (rrd_seek(rrd_file, rra_start, SEEK_SET)) {
         rrd_set_error("apply_smoother: seek to pos %d failed", rra_start);
         free(rrd_values);
+        free(baseline);
         return -1;
     }
     /* write as a single block */
