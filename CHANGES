@@ -306,6 +306,42 @@ Bugfixes
 * rrdcached started through systemd socket activation (`rrdcached.socket`)
   no longer crashes with a segmentation fault when the first client
   connects. (#1387) @emwgit
+* The systemd units in `etc/` no longer give every local user root file
+  access, which makes them behave differently on an existing install.
+  Upgrade note, for systems that use the shipped `rrdcached.socket` and
+  `rrdcached.service` (copies you made in `/etc/systemd/system` are not
+  touched, and neither are your drop-ins):
+  - The socket moves from `/tmp/rrdcached.sock` (mode 0666) to
+    `/run/rrdcached/rrdcached.sock`, owned by root with mode 0660. Point
+    clients (`RRDCACHED_ADDRESS`, `--daemon`, collectd, Cacti and the like)
+    at the new path; a client that is not root needs `SocketGroup=` set in
+    the socket unit.
+  - rrdcached now starts with `-B -O -b /var/lib/rrdcached/db`: it refuses
+    any file outside that directory (relative names are taken from it, `-b`
+    must not be reached through a symbolic link), and `CREATE` no longer
+    overwrites an existing file. The journal is on, in
+    `/var/lib/rrdcached/journal` (`-j`; there was none), and the pid file is
+    `/var/lib/rrdcached/rrdcached.pid` (`-p`). RRD files elsewhere, for
+    example in `/var/lib/rrd`, are refused until you point `-b` there.
+  - The service still runs as root, but with `ProtectSystem=strict`,
+    `ProtectHome=yes` and `PrivateTmp=yes`: it can write only below
+    `/var/lib/rrdcached`, cannot see `/home` and has its own `/tmp`. A
+    directory with RRD files needs `ReadWritePaths=`.
+  - `rrdcached.service` requires `rrdcached.socket` (#1143), starts
+    `$bindir/rrdcached` rather than `$prefix/bin/rrdcached`, and the units
+    are installed below `--prefix` (`$prefix/lib/systemd/system`) instead of
+    systemd's absolute `/usr/lib/systemd/system`; pass `--prefix=/usr` or
+    `--with-systemdsystemunitdir=` for the old place.
+  To keep the old behaviour, run `systemctl edit rrdcached.service` and add
+  `[Service]` with `ExecStart=` (empty), `ExecStart=/usr/bin/rrdcached -g`,
+  `ProtectSystem=no`, `ProtectHome=no` and `PrivateTmp=no`, then
+  `systemctl edit rrdcached.socket` and add `[Socket]` with `ListenStream=`
+  (empty), `ListenStream=/tmp/rrdcached.sock`, `SocketMode=0666` and
+  `ExecStartPre=` (empty). That again lets any local user create and
+  overwrite any file as root. To keep your RRD directory instead, keep the
+  new units and give `ExecStart=` your own `-b /var/lib/rrd`, add
+  `ReadWritePaths=/var/lib/rrd` and set `SocketGroup=` in the socket.
+  @somethingwithproof
 
 Features
 --------

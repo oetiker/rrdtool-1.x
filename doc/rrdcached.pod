@@ -539,8 +539,9 @@ the mapping, for example:
   restorecon -R /var/lib/rrdcached
   setsebool -P domain_can_mmap_files 1
 
-(or a local policy module that allows C<rrdcached_t rrdcached_var_run_t:file
-map>). Do the same for a B<-b> directory elsewhere, with the type your other
+(or, narrower, a local policy module that allows C<rrdcached_t
+rrdcached_var_run_t:file map>: the boolean lets every confined domain map
+files, not only rrdcached). Do the same for a B<-b> directory elsewhere, with the type your other
 programs need there.
 
 =head2 Encryption
