@@ -15,7 +15,6 @@
 #   which leaves every Holt-Winters partner link one RRA too far.
 # Read-only commands must keep working on both so the data stays
 # reachable after an upgrade.
-require_restore
 [ -n "$RRDCACHED_ADDRESS" ] && exit 77
 [ -n "$MSYSTEM" ] && exit 77 # getconf describes MSYS, not the MinGW binary.
 test "$(getconf LONG_BIT)" = 64 || exit 77
