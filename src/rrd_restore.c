@@ -1413,6 +1413,13 @@ static rrd_t *parse_file(
         rrd_set_error("RRD requires at least one data source and RRA");
         status = -1;
     }
+    /* rrd_open refuses a file whose last update is before 1970, so do
+     * not write one. */
+    if (status == 0 && !rrd_test_error() && rrd->live_head->last_up < 0) {
+        rrd_set_error("lastupdate %lld is negative",
+                      (long long) rrd->live_head->last_up);
+        status = -1;
+    }
     if (status == 0 && !rrd_test_error() &&
         rrd_check_hw_dependencies(rrd) != 0)
         status = -1;

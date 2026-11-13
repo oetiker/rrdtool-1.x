@@ -2,7 +2,8 @@
 
 . "$(dirname "$0")/functions"
 
-# Files that rrd_open's header checks must keep accepting.
+# Files that rrd_open's header checks must keep accepting, and the dumps
+# restore must refuse instead of writing a file rrd_open refuses.
 [ -n "$RRDCACHED_ADDRESS" ] && exit 77
 
 BUILD="$BUILDDIR/$(basename "$0")"
@@ -31,5 +32,16 @@ sed 's#<version>0003</version>#<version>3</version>#' "${BUILD}.xml" \
 $RRDTOOL restore "${BUILD}-v3.xml" "${BUILD}-v3.rrd" &&
   $RRDTOOL info "${BUILD}-v3.rrd" >/dev/null
 report "a restored file with version 3 opens"
+
+# rrd_open refuses a negative last update, so restore must not write one.
+sed 's#<lastupdate>[0-9]*</lastupdate>#<lastupdate>-100</lastupdate>#' \
+  "${BUILD}.xml" >"${BUILD}-neg.xml"
+if $RRDTOOL restore "${BUILD}-neg.xml" "${BUILD}-neg.rrd" >"${BUILD}.out" 2>&1; then
+  fail 1 "restore wrote a negative last update"
+fi
+grep -q "lastupdate -100 is negative" "${BUILD}.out" ||
+  fail 1 "restore did not explain the refusal: $(cat "${BUILD}.out")"
+[ ! -e "${BUILD}-neg.rrd" ]
+report "restore refuses a negative last update"
 
 rm -f "${BUILD}"*.rrd "${BUILD}"*.xml "${BUILD}.out"
