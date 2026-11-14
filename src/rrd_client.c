@@ -780,10 +780,8 @@ static int response_read(
         goto out;
     }
 
-    if ((size_t) ret->status > SIZE_MAX / sizeof(*ret->lines))
-        DIE(-6);
-
     expected_lines = (size_t) ret->status;
+    /* calloc refuses a count whose size overflows */
     ret->lines = (char **) calloc(expected_lines, sizeof(*ret->lines));
     if (ret->lines == NULL)
         DIE(-6);
@@ -2302,7 +2300,7 @@ int rrd_client_fetch(
     char    **ds_names;
 
     rrd_value_t *data;
-    size_t    data_size;
+    size_t    data_size = 0;
     size_t    data_fill;
     size_t    row_count;
     size_t    row;
@@ -2494,15 +2492,15 @@ int rrd_client_fetch(
     if ((expected_rows == 0) || ((uintmax_t) row_count != expected_rows))
         BAIL_OUT(-1, "No data returned or headers invalid.");
 
-    if ((size_t) ds_num > SIZE_MAX / row_count)
-        BAIL_OUT(-1, "Returned data size is too large");
-    data_size = row_count * (size_t) ds_num;
-    if (data_size > SIZE_MAX / sizeof(*data))
-        BAIL_OUT(-1, "Returned data size is too large");
-
-    data = (rrd_value_t *) calloc(data_size, sizeof(*data));
+    /* A row count times ds_num that overflows takes the same exit as a
+     * failed allocation; calloc itself refuses a data_size whose size in
+     * bytes overflows. */
+    if ((size_t) ds_num <= SIZE_MAX / row_count) {
+        data_size = row_count * (size_t) ds_num;
+        data = (rrd_value_t *) calloc(data_size, sizeof(*data));
+    }
     if (data == NULL)
-        BAIL_OUT(-1, "Out of memory");
+        BAIL_OUT(-1, "Returned data is too large or out of memory");
 
 
     data_fill = 0;
