@@ -10,6 +10,7 @@
 /lastupdate-v
 /mock-rados-bounds
 /fetch-empty-security
+/restore-text
 /.libs/
 /graph-security
 /daemon-fetch-security

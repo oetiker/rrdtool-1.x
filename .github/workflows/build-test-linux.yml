@@ -56,6 +56,7 @@ jobs:
         # they have not been re-checked on the current ubuntu-latest runner (Ubuntu 26.04)
         make check TESTS_STYLE="valgrind-logfile" TESTS="modify1 modify2 modify3 modify4 modify5 tune1 tune2 rpn2 rrdcreate compat-cloexec dump-restore create-with-source-1 create-with-source-2 create-with-source-3 create-with-source-and-mapping-1 create-from-template-1 dcounter1 xport1 list1 pdp-calc1"
         podchecker doc/*.pod
+        make check TESTS_STYLE="valgrind-logfile" TESTS="security-create-source-prefill"
     - name: Upload valgrind test-suite.log
       if: ${{ failure() }}
       uses: actions/upload-artifact@v7

@@ -14,6 +14,13 @@ Bugfixes
   `RRA#<index>:deltapos=abc`) silently set the value to 0. It now fails
   with "Unable to parse deltapos value 'abc'" and leaves the file
   unchanged. @oetiker
+* `rrdtool create --source` read past the end of an internal array
+  (valgrind reports an invalid read in init_cdp) when the new file had no
+  1-step AVERAGE RRA long enough to prefill from. The created file was not
+  affected. @somethingwithproof
+* `rrdtool restore` hung forever on some malformed XML (an invalid byte
+  sequence in a value); it now fails with "XML parse error while looking
+  for text". @somethingwithproof
 * `rrdtool tune --alpha 0.5abc` stored 0.5 and `--window-length 3x`
   stored 3: tune ignored characters after the number for all Holt-Winters
   and FAILURES parameters. Such values are now refused with "Unable to

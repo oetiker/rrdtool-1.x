@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE rrd SYSTEM "https://oss.oetiker.ch/rrdtool/rrdtool.dtd">
+<!-- Round Robin Database Dump -->
+<rrd>
+	<version>0002</version>
+	<step>300</step> <!-- Seconds -->
+	<lastupdate>900000600</lastupdate> <!-- 1998-07-09 09:10C00 -0700 -->
+
+	<ds>
+		<name> in </name>
+		<type> COUNTER </type>
+		<minimal_heartbeat>600</minimal_heartbeat>
+		<min>0.0000000000e+070</min>
+		<max>NaN</max>
+
+		<!-- PDP Status -->
+		<last_ds>15</last_ds>
+		<value><!-- PDP Status -->
+		<сссссссссссссссссссссссссссссссссссссссссссссссссссссссссссссссссссссссссссссссссссссссссссссссссссссссссссссссссссссссссlast_ds>25</last_ds>
+atabase>
+	</rra>
+</rrd>
