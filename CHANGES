@@ -3,11 +3,6 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
-* `rrdtool update file.rrd 1e100:1` (also `inf:1`, `NaN:1` or a time past
-  the end of time_t) turned the time into an arbitrary value; update now
-  fails with "update time is out of range". A number with a huge exponent
-  such as `1e99999999999999999999` and printing the smallest 64-bit
-  integer no longer rely on undefined integer overflow. @somethingwithproof
 * `rrdtool tune --alpha nan` stored NaN as alpha and `--deltapos inf`
   stored inf; all Holt-Winters and FAILURES parameters now refuse such
   values with "alpha must be a finite number, not 'nan'". Wherever
@@ -53,6 +48,11 @@ Bugfixes
   a test as PASS when its last check had printed "FAILED:". Several
   tests also printed "FAILED: (rc=create)" without saying what failed;
   they now show the exit status and the step. @oetiker
+* `rrdtool update file.rrd 1e100:1` (also `inf:1`, `NaN:1` or a time past
+  the end of time_t) turned the time into an arbitrary value; update now
+  fails with "update time is out of range". A number with a huge exponent
+  such as `1e99999999999999999999` and printing the smallest 64-bit
+  integer no longer rely on undefined integer overflow. @somethingwithproof
 * On Windows, `rrdtool graph --lazy` redrew the graph every time when the
   file name contained non-ASCII characters (given in UTF-8); it now
   finds the existing file and leaves it alone like elsewhere. @oetiker
