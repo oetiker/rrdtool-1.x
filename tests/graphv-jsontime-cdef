@@ -1,0 +1,31 @@
+#!/bin/bash
+
+. $(dirname $0)/functions
+require_graph
+
+# graphv --add-jsontime runs data_calc a second time for the JSON export.
+# Each CDEF allocated a new data buffer and dropped the first one; the
+# leak shows only under valgrind (TESTS_STYLE=valgrind-logfile).
+if [ -n "$MSYSTEM" ]; then
+    # Avoid Windows drive letter issues in the path of DEF:vname=rrdfile under MSYS or MSYS2
+    BUILD=graphv-jsontime-cdef
+else
+    BUILD=$BUILDDIR/graphv-jsontime-cdef
+fi
+
+rm -f ${BUILD}.rrd
+$RRDTOOL create ${BUILD}.rrd --start 1300000000 --step 60 \
+    DS:a:GAUGE:120:U:U RRA:AVERAGE:0.5:1:10
+report "create"
+$RRDTOOL update ${BUILD}.rrd 1300000060:1 1300000120:2 1300000180:3
+report "update"
+
+OUT=$($RRDTOOL graphv --add-jsontime - --start 1300000000 --end 1300000300 \
+    DEF:a=${BUILD}.rrd:a:AVERAGE CDEF:b=a,2,* VDEF:m=b,MAXIMUM \
+    LINE1:b#ff0000:b GPRINT:m:%lf)
+report "graphv --add-jsontime with a CDEF"
+
+echo "$OUT" | grep -q '"data"'
+report -s $? "the JSON export is in the output"
+
+rm -f ${BUILD}.rrd

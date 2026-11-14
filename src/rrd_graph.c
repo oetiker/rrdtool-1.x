@@ -1100,6 +1100,12 @@ int data_fetch(
         if (im->gdes[i].gf != GF_DEF)
             continue;
 
+        /* graphv --add-jsontime processes the DEFs again. Keep each
+         * existing allocation and its owner, even when another DEF for
+         * this RRD has replaced its entry in rrd_map. */
+        if (im->gdes[i].data != NULL)
+            continue;
+
         /* do we have it already ? */
         gpointer  value;
         char     *key = gdes_fetch_key(im->gdes[i]);
@@ -1331,6 +1337,12 @@ int data_calc(
             }
             break;
         case GF_CDEF:
+            /* graphv --add-jsontime runs data_calc a second time; the
+             * CDEF owns the buffer from the first pass */
+            if (im->gdes[gdi].data_first) {
+                free(im->gdes[gdi].data);
+                im->gdes[gdi].data = NULL;
+            }
             im->gdes[gdi].ds_cnt = 1;
             im->gdes[gdi].ds = 0;
             im->gdes[gdi].data_first = 1;
@@ -3516,6 +3528,7 @@ int grid_paint(
                  image_title.lines[j] ? image_title.lines[j] : "");
         j++;
     }
+    graph_title_free(&image_title);
 
     /* rrdtool 'logo' */
     if (!(im->extra_flags & NO_RRDTOOL_TAG)) {
@@ -3616,15 +3629,18 @@ int grid_paint(
                                         [TEXT_PROP_LEGEND].font_desc,
                                         im->tabwidth, im->gdes[i].legend);
 
+                /* rrd_info_push copies string values */
                 val.u_str = sprintf_alloc("%s", im->gdes[i].legend);
                 grinfo_push(im,
                             sprintf_alloc("legend[%ld]", legend_cnt),
                             RD_I_STR, val);
+                free(val.u_str);
                 val.u_str = sprintf_alloc("%.0f,%.0f,%.0f,%.0f",
                                           X0, Y0 - h, X0 + w, Y0);
                 grinfo_push(im,
                             sprintf_alloc("coords[%ld]", legend_cnt),
                             RD_I_STR, val);
+                free(val.u_str);
                 legend_cnt++;
             }
             /* The legend for GRAPH items starts with "M " to have
@@ -3850,6 +3866,7 @@ int graph_size_location(
         Ytitle =
             im->text_prop[TEXT_PROP_TITLE].size * (image_title.count +
                                                    1) * 1.6;
+        graph_title_free(&image_title);
     } else {
         // we have no title; get a little clearing from the top
         Ytitle = Yspacing;
@@ -5251,6 +5268,11 @@ rrd_info_t *rrd_graph_v(
         grinfo_push(&im, sprintf_alloc("image"), RD_I_BLO, img);
     }
     if (im.extra_flags & FORCE_JSONTIME) {
+        /* grinfo has its own copy of the image, and rrd_graph_xport puts
+         * the JSON in rendered_image */
+        free(im.rendered_image);
+        im.rendered_image = NULL;
+        im.rendered_image_size = 0;
         im.imgformat = IF_JSONTIME;
         if (rrd_graph_xport(&im)) {
 	        rrd_infoval_t img;
@@ -6904,6 +6926,8 @@ image_title_t graph_title_split(
 
     char     *consumed = strdup(title); /* allocates copy */
 
+    retval.buf = consumed;
+
     do {
         /*
            search for next delimiter occurrence in the title,
@@ -6942,7 +6966,8 @@ image_title_t graph_title_split(
         }
 
         // move the consumed pointer past any delimiter, so we can loop around again
-        consumed = consumed + found_size;
+        if (found_pos)
+            consumed += found_size;
     }
     // must not create more than MAX lines, so must stop splitting
     // either when we hit the max, or have no other delimiter
@@ -6952,4 +6977,13 @@ image_title_t graph_title_split(
     retval.count = count;
 
     return retval;
+}
+
+void graph_title_free(
+    image_title_t *title)
+{
+    free(title->lines);
+    free(title->buf);
+    title->lines = NULL;
+    title->buf = NULL;
 }

@@ -377,6 +377,7 @@ typedef struct image_title_t
 {
     char **lines;
     int count;
+    char *buf;  /* the lines point into this copy of the title */
 } image_title_t;
 
 /* Prototypes */
@@ -462,6 +463,8 @@ int       graph_paint_timestring(
                                 image_desc_t *,int,int);
 int       graph_paint_xy(
                         image_desc_t *,int,int);
+void      graph_title_free(
+    image_title_t *title);
 image_title_t graph_title_split(
     const char *);
 int       rrd_graph_xport(

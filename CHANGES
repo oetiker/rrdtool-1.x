@@ -20,6 +20,14 @@ Bugfixes
   parse ...", and `--window-length abc` or `--failure-threshold abc` no
   longer report the misleading "Parameter must be between 1 and 28".
   @oetiker
+* `rrdtool graph` and `graphv` leaked the title they split into lines and
+  the legend and coordinate strings; `graphv --add-jsontime` also leaked
+  the image, the fetched data and the data of every CDEF. This affected
+  programs that draw many graphs in one process, such as the language
+  bindings and rrdcgi. @somethingwithproof
+* After the last line of a graph title, `rrdtool graph` did arithmetic
+  on a null pointer, which UBSan reports as undefined behaviour.
+  @somethingwithproof
 * On MSYS2, `make check` failed the tests graph-export-open and
   graph-lazy with "ERROR: opening '/d/a/.../tests/graph-lazy.rrd': The
   system cannot find the path specified." @oetiker

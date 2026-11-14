@@ -2,9 +2,11 @@
 
 #include <limits.h>
 #include <math.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 static int expect_overflow(
     const char *context)
@@ -161,10 +163,113 @@ static int test_empty_percentiles(void)
     return 0;
 }
 
+/* Record a failure, print the diagnostic and leave through the shared
+ * cleanup label; a single line so no failure-only statement is left over. */
+#define TEST_CHECK(c, ...) \
+    do { if (!(c)) { fprintf(stderr, __VA_ARGS__); goto done; } } while (0)
+
+/* Same, but keep going so the caller can still release resources. */
+#define TEST_CHECK_SOFT(c, ...) \
+    do { if (!(c)) { fprintf(stderr, __VA_ARGS__); failed = 1; } } while (0)
+
+static int test_repeated_fetch(unsigned long step)
+{
+    const char *create_args[] = {
+        "DS:a:GAUGE:120:U:U", "DS:b:GAUGE:120:U:U",
+        "RRA:AVERAGE:0.5:1:20"
+    };
+    const char *update_args[] = { "1000000060:1:2", "1000000120:3:4" };
+    const char *builddir = getenv("BUILDDIR");
+    char path[1024] = "";
+    image_desc_t im;
+    rrd_value_t *data[2];
+    char **names[2];
+    int owners[2];
+    int fd = -1, length, result = 1;
+    unsigned int i;
+
+    rrd_graph_init(&im, IMAGE_INIT_NO_CAIRO);
+    length = snprintf(path, sizeof(path), "%s/graph-fetch-XXXXXX",
+                      builddir ? builddir : ".");
+    TEST_CHECK(length >= 0 && (size_t) length < sizeof(path),
+               "fetch fixture path too long\n");
+    fd = mkstemp(path);
+    TEST_CHECK(fd >= 0, "could not create fetch fixture file\n");
+    close(fd);
+    rrd_clear_error();
+    TEST_CHECK(rrd_create_r(path, 60, 1000000000, 3, create_args) == 0 &&
+               rrd_update_r(path, NULL, 2, update_args) == 0,
+               "could not create fetch fixture: %s\n", rrd_get_error());
+
+    im.step = step;
+    im.gdes = calloc(2, sizeof(*im.gdes));
+    TEST_CHECK(im.gdes != NULL, "could not allocate DEFs\n");
+    im.gdes_c = 2;
+    for (i = 0; i < 2; i++) {
+        graph_desc_t *def = &im.gdes[i];
+
+        def->gf = GF_DEF;
+        snprintf(def->rrd, sizeof(def->rrd), "%s", path);
+        snprintf(def->ds_nam, sizeof(def->ds_nam), "%c", 'a' + i);
+        def->ds = -1;
+        def->cf = CF_AVERAGE;
+        def->start = def->start_orig = 1000000000;
+        def->end = def->end_orig = 1000000120;
+        def->step = def->step_orig = step;
+    }
+    TEST_CHECK(data_fetch(&im) == 0, "fetch failed: %s\n", rrd_get_error());
+    for (i = 0; i < 2; i++) {
+        data[i] = im.gdes[i].data;
+        names[i] = im.gdes[i].ds_namv;
+        owners[i] = im.gdes[i].data_first;
+        TEST_CHECK(im.gdes[i].ds == (int) i && im.gdes[i].ds_cnt == 2,
+                   "DEF %u has the wrong data source\n", i);
+    }
+    /* Exercise both independently fetched and shared buffers, followed
+     * by the second pass used by graphv --add-jsontime. */
+    TEST_CHECK(data_fetch(&im) == 0, "second fetch failed: %s\n",
+               rrd_get_error());
+    for (i = 0; i < 2; i++) {
+        TEST_CHECK(im.gdes[i].data == data[i] && im.gdes[i].ds_namv == names[i] &&
+                   im.gdes[i].data_first == owners[i],
+                   "repeated fetch changed DEF %u ownership\n", i);
+    }
+    result = 0;
+done:
+    im_free(&im);
+    if (path[0] != '\0' && fd >= 0)
+        remove(path);
+    return result;
+}
+
+static int test_title_cleanup(void)
+{
+    const char *titles[] = {"", "\nleading\n\nsecond", "one<br>two\\nthree\nfour"};
+    const int counts[] = {1, 2, 3};
+    const char *first[] = {"", "leading", "one"};
+    int failed = 0;
+    size_t i;
+
+    for (i = 0; i < sizeof(titles) / sizeof(titles[0]); i++) {
+        image_title_t title = graph_title_split(titles[i]);
+
+        TEST_CHECK_SOFT(title.lines != NULL && title.buf != NULL &&
+                        title.count == counts[i] &&
+                        strcmp(title.lines[0], first[i]) == 0,
+                        "title %zu was split incorrectly\n", i);
+        graph_title_free(&title);
+        TEST_CHECK_SOFT(title.lines == NULL && title.buf == NULL,
+                        "title %zu was not cleared\n", i);
+        graph_title_free(&title);
+    }
+    return failed;
+}
+
 int main(void)
 {
     int result = test_percentiles(0) | test_percentiles(-4) | test_percentiles(-2) |
-        test_invalid_ranges() | test_empty_percentiles();
+        test_invalid_ranges() | test_empty_percentiles() |
+        test_repeated_fetch(1) | test_repeated_fetch(60) | test_title_cleanup();
     if (sizeof(time_t) > sizeof(int))
         result |= test_cdef_overflow(0, (time_t) ((uintmax_t) INT_MAX + 1));
     /* Allocation-bound cases require a representable end timestamp. */
