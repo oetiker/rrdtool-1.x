@@ -44,6 +44,10 @@ static size_t count_bytes(
     return len;
 }
 
+/* The helpers below run against a fake daemon that sends one malformed
+ * reply. Each returns 0 when the client rejected the reply, left its
+ * outputs empty and dropped the connection, and 1 otherwise. A NULL client
+ * (connection or allocation failure) counts as a test failure. */
 static int check_fetch_failure(
     const char *addr,
     const char *file)
@@ -55,30 +59,21 @@ static int check_fetch_failure(
     unsigned long ds_num = 0;
     char    **ds_names = NULL;
     rrd_value_t *data = NULL;
+    unsigned long i;
     int       status;
+    int       failed;
 
-    client = rrd_client_new(NULL);
-    if (client == NULL)
-        return 1;
-    if (rrd_client_connect(client, addr) != 0) {
-        rrd_client_destroy(client);
-        return 1;
-    }
-
+    client = rrd_client_new(addr);
     status = rrd_client_fetch(client, file, "AVERAGE", &start, &end, &step,
                               &ds_num, &ds_names, &data);
-    if (status == 0 || rrd_client_is_connected(client) ||
-        rrd_client_ping(client)) {
-        free(data);
-        while (ds_num > 0)
-            free(ds_names[--ds_num]);
-        free(ds_names);
-        rrd_client_destroy(client);
-        return 1;
-    }
-
+    failed = (client != NULL) && (status != 0) && (ds_num == 0) &&
+        (ds_names == NULL) && (data == NULL) &&
+        !rrd_client_is_connected(client) && !rrd_client_ping(client);
+    for (i = 0; ds_names != NULL && i < ds_num; i++) free(ds_names[i]);
+    free(ds_names);
+    free(data);
     rrd_client_destroy(client);
-    return 0;
+    return failed ? 0 : 1;
 }
 
 static int check_time_failure(
@@ -91,15 +86,12 @@ static int check_time_failure(
     int       failed;
 
     client = rrd_client_new(addr);
-    if (client == NULL)
-        return 1;
-
     if (first)
         value = rrd_client_first(client, file, 0);
     else
         value = rrd_client_last(client, file);
-    failed = (value == (time_t) -1) && !rrd_client_is_connected(client) &&
-        !rrd_client_ping(client);
+    failed = (client != NULL) && (value == (time_t) -1) &&
+        !rrd_client_is_connected(client) && !rrd_client_ping(client);
     rrd_client_destroy(client);
     return failed ? 0 : 1;
 }
@@ -118,17 +110,12 @@ static int check_lastupdate_failure(
     int       failed;
 
     client = rrd_client_new(addr);
-    if (client == NULL)
-        return 1;
-
     status = rrd_client_lastupdate(client, file, &last_update, &ds_count,
                                    &ds_names, &last_ds);
-    failed = (status != 0) && !rrd_client_is_connected(client) &&
-        !rrd_client_ping(client);
-    for (i = 0; i < ds_count; i++) {
-        free(ds_names[i]);
-        free(last_ds[i]);
-    }
+    failed = (client != NULL) && (status != 0) && (ds_count == 0) &&
+        (ds_names == NULL) && (last_ds == NULL) &&
+        !rrd_client_is_connected(client) && !rrd_client_ping(client);
+    for (i = 0; ds_names != NULL && last_ds != NULL && i < ds_count; i++) { free(ds_names[i]); free(last_ds[i]); }
     free(ds_names);
     free(last_ds);
     rrd_client_destroy(client);
@@ -144,12 +131,9 @@ static int check_stats_failure(
     int       failed;
 
     client = rrd_client_new(addr);
-    if (client == NULL)
-        return 1;
-
     status = rrd_client_stats_get(client, &stats);
-    failed = (status != 0) && !rrd_client_is_connected(client) &&
-        !rrd_client_ping(client);
+    failed = (client != NULL) && (status != 0) && (stats == NULL) &&
+        !rrd_client_is_connected(client) && !rrd_client_ping(client);
     rrdc_stats_free(stats);
     rrd_client_destroy(client);
     return failed ? 0 : 1;
@@ -164,12 +148,9 @@ static int check_info_failure(
     int       failed;
 
     client = rrd_client_new(addr);
-    if (client == NULL)
-        return 1;
-
     info = rrd_client_info(client, file);
-    failed = (info == NULL) && !rrd_client_is_connected(client) &&
-        !rrd_client_ping(client);
+    failed = (client != NULL) && (info == NULL) &&
+        !rrd_client_is_connected(client) && !rrd_client_ping(client);
     rrd_info_free(info);
     rrd_client_destroy(client);
     return failed ? 0 : 1;

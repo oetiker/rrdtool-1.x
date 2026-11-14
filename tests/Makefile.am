@@ -120,6 +120,18 @@ endif
 rrd_client_api_SOURCES = test_rrd_client_api.c
 rrd_client_api_LDADD = ${top_builddir}/src/librrd.la
 
+# Includes src/rrd_client.c to inject allocation failures and to talk to a
+# fake daemon over a socketpair.
+if !MINGW_W64
+if HAVE_STATIC_LIBRRD
+check_PROGRAMS += client-response-parsing
+TESTS += client-response-parsing
+endif
+endif
+client_response_parsing_SOURCES = test_client_response_parsing.c
+client_response_parsing_LDFLAGS = -static
+client_response_parsing_LDADD = ${top_builddir}/src/librrd.la
+
 if BUILD_RRDCACHED
 if HAVE_STATIC_LIBRRD
 check_PROGRAMS += daemon-fetch-security

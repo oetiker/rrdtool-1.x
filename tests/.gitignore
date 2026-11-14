@@ -18,6 +18,7 @@
 /tune-legacy-aberrant
 /client-header-standalone
 /rrd-client-api
+/client-response-parsing
 
 # scratch output of the tests (removed by make clean)
 /graph*.pdf
