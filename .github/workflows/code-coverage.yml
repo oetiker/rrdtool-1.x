@@ -117,10 +117,16 @@ jobs:
       uses: actions/checkout@v6
 
     - name: Install dependencies
+      timeout-minutes: 10
       run: |
-        sudo apt-get update
-        sudo apt-get install -y autopoint build-essential clang llvm libtool-bin \
+        sudo apt-get -o Acquire::Retries=3 \
+          -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update
+        sudo apt-get -o Acquire::Retries=3 \
+          -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 install -y autopoint build-essential clang llvm libtool-bin \
                                 libpango1.0-dev libxml2-dev gettext
+
+    - name: Verify sanitizer failure handling
+      run: bash fuzz/test-run.sh
 
     - name: Build fuzz harnesses
       run: |
@@ -130,25 +136,69 @@ jobs:
                     LDFLAGS='-fprofile-instr-generate -fcoverage-mapping'
         make
 
-    - name: Run instrumented open and restore regressions
+    - name: Run instrumented regressions
+      env:
+        ASAN_OPTIONS: detect_leaks=1:abort_on_error=1
+        UBSAN_OPTIONS: halt_on_error=1:abort_on_error=1:print_stacktrace=1
       run: |
         mkdir -p /tmp/rrd-fuzz-profiles
+        tests="security-header-counts rrd-open-security security-rados-bounds security-restore-zero-row-cnt security-restore-malformed-row dump-restore"
+        for test in hw-failures rpn-failures restore-text cli-failures \
+                    graph-security security-hw-smoothing-window \
+                    security-hw-dependencies security-compute-ds \
+                    update-compute-only verify-json; do
+          if test -f "tests/$test" || test -f "tests/test_${test//-/_}.c"; then
+            tests+=" $test"
+          fi
+        done
+        # Graph regressions use fontconfig's process-lifetime cache. Keep
+        # leak detection enabled for application allocations.
+        printf 'leak:libfontconfig\n' > /tmp/rrd-fuzz-lsan.supp
+        LSAN_OPTIONS=suppressions=/tmp/rrd-fuzz-lsan.supp \
         LLVM_PROFILE_FILE='/tmp/rrd-fuzz-profiles/test-%p.profraw' \
-          make check TESTS="security-header-counts rrd-open-security security-rados-bounds security-restore-zero-row-cnt security-restore-malformed-row dump-restore"
+          make check TESTS="$tests"
 
     - name: Exercise seed corpora
       run: |
-        mkdir -p /tmp/rrd-fuzz-corpus
-        cp fuzz/corpus/* /tmp/rrd-fuzz-corpus/
-        LLVM_PROFILE_FILE='/tmp/rrd-fuzz-profiles/open-%p.profraw' \
-          fuzz/rrd_open_fuzzer -seed=1 -runs=10000 /tmp/rrd-fuzz-corpus
-        LLVM_PROFILE_FILE='/tmp/rrd-fuzz-profiles/restore-%p.profraw' \
-          fuzz/rrd_restore_fuzzer -seed=1 -runs=10000 /tmp/rrd-fuzz-corpus
+        status=0
+        for harness in rrd_open_fuzzer rrd_restore_fuzzer; do
+          LLVM_PROFILE_FILE="/tmp/rrd-fuzz-profiles/$harness-%p.profraw" \
+            bash fuzz/run.sh "fuzz/$harness" "fuzz-state/$harness" \
+              -seed=1 -runs=10000 -timeout=25 -rss_limit_mb=2048 || status=1
+        done
+        exit "$status"
+
+    - name: Preserve fuzz logs, reproducers, corpus and profiles
+      if: ${{ always() }}
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      with:
+        name: fuzz-coverage-diagnostics
+        path: |
+          fuzz-state/
+          /tmp/rrd-fuzz-run.*/
+          /tmp/rrd-fuzz-profiles/
+          tests/*.log
+          tests/test-suite.trs
+        retention-days: 30
+        if-no-files-found: warn
+
+    - name: Export fuzz coverage
+      run: |
         llvm-profdata merge -sparse /tmp/rrd-fuzz-profiles/*.profraw -o fuzz.profdata
+        # The CLI and fault tests execute library paths that seed mutation
+        # may never reach. Export their mappings as well as the fuzzers'.
+        objects=(-object src/rrdtool)
+        for binary in tests/hw-failures tests/rpn-failures \
+                      tests/restore-text tests/cli-failures tests/graph-security; do
+          if test -x "$binary"; then
+            objects+=(-object "$binary")
+          fi
+        done
         llvm-cov export -format=lcov \
           -instr-profile=fuzz.profdata \
           fuzz/rrd_open_fuzzer \
           -object fuzz/rrd_restore_fuzzer \
+          "${objects[@]}" \
           >fuzz-coverage-full.info
         sed '/^BRDA:/d; /^BRF:/d; /^BRH:/d' fuzz-coverage-full.info > fuzz-coverage.info
 

@@ -54,6 +54,12 @@ Bugfixes
 * Building on Windows with MSYS2 printed "warning: 'O_CREAT' redefined"
   and the same for `O_WRONLY`, `O_RDONLY`, `O_APPEND` and `O_RDWR`
   while compiling `compat-cloexec.c` and its test. @oetiker
+* The CI now runs the whole test suite under AddressSanitizer and UBSan,
+  and a fuzzing job mutates the seed corpora for two minutes per harness on
+  every change and half an hour every night. A sanitizer finding fails the
+  job and keeps the log and the reproducing input as a build artifact. The
+  open harness now also runs info, dump, first, last, lastupdate and update
+  on every file that opens. @somethingwithproof
 * A program that dumped an RRD through rrdcached with the client library
   lost its daemon connection: every later call on the same client failed
   until it connected again. The connection now stays usable after a dump,
