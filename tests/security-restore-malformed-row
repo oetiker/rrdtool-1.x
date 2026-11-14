@@ -2,6 +2,7 @@
 
 . "$(dirname "$0")/functions"
 
+require_restore
 [ -n "$RRDCACHED_ADDRESS" ] && exit 77
 WORK=$(mktemp -d "$BUILDDIR/restore-bounds.XXXXXX") || fail 1 mktemp
 BUILD="$WORK/test"

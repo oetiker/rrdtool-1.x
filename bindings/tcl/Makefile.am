@@ -3,8 +3,7 @@ EXTRA_DIST = README tclrrd.c
 
 VERSION = @VERSION@
 
-AM_CFLAGS = @CFLAGS@
-### no including this by default @WERROR@
+AM_CFLAGS = $(RRD_CFLAGS)
 
 TCL_PREFIX = @TCL_PREFIX@
 TCL_SHLIB_LD = @TCL_SHLIB_LD@
@@ -56,6 +55,9 @@ pkgIndex.tcl:
 install-exec-local: $(TCL_RRD_LIB)
 	@$(NORMAL_INSTALL)
 	$(INSTALL_PROGRAM) $(TCL_RRD_LIB) $(DESTDIR)$(libdir)/$(TCL_RRD_LIB)
+
+uninstall-local:
+	rm -f $(DESTDIR)$(libdir)/$(TCL_RRD_LIB)
 
 CLEANFILES = tclrrd.o tclrrd.so $(TCL_RRD_LIB) pkgIndex.tcl
 
