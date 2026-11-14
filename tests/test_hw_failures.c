@@ -65,12 +65,15 @@ static ssize_t test_read(rrd_file_t *file, void *buffer, size_t count)
 #undef rrd_seek
 #undef rrd_read
 
+/* One line per assertion so failure-only code adds no uncovered lines. */
+#define CHECK(c, ...) do { if (!(c)) { fprintf(stderr, __VA_ARGS__); failed = 1; } } while (0)
+
 int main(void)
 {
     rrd_t rrd;
     stat_head_t header = {0};
     rra_def_t archive = {0};
-    int status;
+    int status, failed = 0;
 
     rrd_init(&rrd);
     rrd.stat_head = &header;
@@ -80,15 +83,13 @@ int main(void)
     archive.row_cnt = ULONG_MAX;
     archive.par[RRA_seasonal_smoothing_window].u_val = 1.0;
     status = apply_smoother(&rrd, 0, 0, NULL);
-    if (status != -1 || !strstr(rrd_get_error(), "too long to smooth"))
-        return 1;
+    CHECK(status == -1 && strstr(rrd_get_error(), "too long to smooth"), "oversize RRA: status %d: %s\n", status, rrd_get_error());
     archive.row_cnt = 10;
     archive.par[RRA_seasonal_smoothing_window].u_val = 0.5;
     short_read = 1;
     rrd_clear_error();
     status = apply_smoother(&rrd, 0, 0, NULL);
-    if (status != -1 || live || !strstr(rrd_get_error(), "reading value failed"))
-        return 1;
+    CHECK(status == -1 && !live && strstr(rrd_get_error(), "reading value failed"), "short read: status %d, live %d: %s\n", status, live, rrd_get_error());
     short_read = 0;
     /* Values, four workspace arrays, then two allocations per DS queue.
      * Failing the second queue also checks cleanup of the first queue. */
@@ -96,12 +97,7 @@ int main(void)
         allocation = 0;
         rrd_clear_error();
         status = apply_smoother(&rrd, 0, 0, NULL);
-        if (status != -1 || live ||
-            !strstr(rrd_get_error(), "memory allocation failure")) {
-            fprintf(stderr, "smoother allocation %d: status %d, live %d: %s\n",
-                    fail_at, status, live, rrd_get_error());
-            return 1;
-        }
+        CHECK(status == -1 && !live && strstr(rrd_get_error(), "memory allocation failure"), "smoother allocation %d: status %d, live %d: %s\n", fail_at, status, live, rrd_get_error());
     }
     /* The second seek writes the smoothed values back. */
     fail_at = 0;
@@ -109,10 +105,6 @@ int main(void)
     fail_seek_at = 2;
     rrd_clear_error();
     status = apply_smoother(&rrd, 0, 0, NULL);
-    if (status != -1 || live || !strstr(rrd_get_error(), "seek to pos")) {
-        fprintf(stderr, "smoother write-back seek: status %d, live %d: %s\n",
-                status, live, rrd_get_error());
-        return 1;
-    }
-    return 0;
+    CHECK(status == -1 && !live && strstr(rrd_get_error(), "seek to pos"), "smoother write-back seek: status %d, live %d: %s\n", status, live, rrd_get_error());
+    return failed;
 }
