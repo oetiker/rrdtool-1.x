@@ -1,0 +1,37 @@
+#!/bin/bash
+
+. "$(dirname "$0")/functions"
+
+# An update that fails after process_arg split off the leftmost open PDP
+# leaked that PDP's values; a COMPUTE program that underflows the RPN
+# stack fails every step. The leak itself shows only in the valgrind and
+# sanitizer runs. Through rrdcached the update is only queued.
+[ -n "$RRDCACHED_ADDRESS" ] && exit 77
+BUILD="$BUILDDIR/$(basename "$0")"
+
+expect_underflow () {
+  local what="$1"
+  shift
+  $RRDTOOL update "${BUILD}.rrd" "$@" >"${BUILD}.out" 2>&1
+  status=$?
+  if [ "$status" -eq 0 ] || [ "$status" -ge 128 ]; then
+    fail 1 "$what: exit status $status: $(cat "${BUILD}.out")"
+  elif ! grep -q "RPN stack underflow" "${BUILD}.out"; then
+    fail 1 "$what: $(cat "${BUILD}.out")"
+  else
+    ok "$what"
+  fi
+}
+
+rm -f "${BUILD}.rrd"
+$RRDTOOL create "${BUILD}.rrd" --start 1000000000 --step 60 \
+  DS:a:GAUGE:300:U:U DS:c:COMPUTE:a,+ RRA:AVERAGE:0.5:1:5
+report create
+
+# 1000000000 is 40 s into a step: this update closes that open PDP and
+# three more.
+expect_underflow "update across an open PDP fails" 1000000200:2
+# one step only: no open PDP to split off
+expect_underflow "update of one step fails" 1000000060:2
+
+rm -f "${BUILD}.rrd" "${BUILD}.out"

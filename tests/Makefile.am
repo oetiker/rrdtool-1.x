@@ -28,6 +28,8 @@ EXTRA_DIST = Makefile.am \
 	xport1.json.output xport1.xml.output xport2 xport3 xport4 graph3 graph4 graph5 graph6 graph7 info-cached1 \
 	pdp-calc1 pdp-calc1-1-avg-60.output pdp-calc1-1-avg-300.output pdp-calc1-1-max-300.output
 
+script_tests += update-open-pdp-error
+
 # NB: AM_TESTS_ENVIRONMENT not available until automake 1.12
 AM_TESTS_ENVIRONMENT = \
 	BASEDIR=${abs_srcdir} ; export BASEDIR ; \

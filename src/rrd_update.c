@@ -1261,6 +1261,7 @@ static int process_arg(
 
                 /* allocate temp storage for assigning values to most left open pdp */
                 rrd_value_t *open_pdp_new;
+                int       open_rc;
                 if ((open_pdp_new = (rrd_value_t *) malloc(sizeof(rrd_value_t) * rrd->stat_head->ds_cnt)) == NULL) {
                     rrd_set_error("allocating open_pdp_new.");
                     return -1;
@@ -1283,12 +1284,16 @@ static int process_arg(
                     #endif
                 }
 
-                if (process_all_pdp_st(rrd,
+                /* only this call reads open_pdp_new; free it before the
+                 * error paths below, which return without it */
+                open_rc = process_all_pdp_st(rrd,
                                        (double) sec_open_pdp,  /* interval */
                                        (double) sec_open_pdp,  /* pre_int */
                                        0.0,                    /* post_int */
                                        1L,                     /* elapsed_pdp_st */
-                                       open_pdp_new, pdp_temp) == -1) {
+                                       open_pdp_new, pdp_temp);
+                free(open_pdp_new);
+                if (open_rc == -1) {
                     return -1;
                 }
 
@@ -1322,8 +1327,6 @@ static int process_arg(
                 pre_int -= sec_open_pdp;
                 elapsed_pdp_st--;
                 proc_pdp_cnt++;
-
-                free(open_pdp_new);
             }
         } /* JKammler - bugfix end */
 
