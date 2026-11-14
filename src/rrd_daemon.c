@@ -2042,6 +2042,13 @@ static int handle_request_tune(
         argv[argc_tmp] = tok;
         argc_tmp += 1;
     }
+    /* rrd_tune_r reads argc entries, and only argc_tmp were filled in */
+    if (argc_tmp != argc) {
+        rc = send_response(sock, RESP_ERR,
+                           "Too few arguments (expected %d, got %d)\n",
+                           argc, argc_tmp);
+        goto done;
+    }
 
     status = rrd_tune_r(file, argc, argv);
     if (status != 0) {
@@ -3953,8 +3960,11 @@ static void journal_init(
     }
     closedir(dir);
 
-    qsort(journal_cur->files, journal_cur->files_num,
-          sizeof(journal_cur->files[0]), journal_sort);
+    /* files is NULL for an empty journal directory, which qsort must
+     * not be given even with a count of 0 */
+    if (journal_cur->files_num > 0)
+        qsort(journal_cur->files, journal_cur->files_num,
+              sizeof(journal_cur->files[0]), journal_sort);
 
     for (uint i = 0; i < journal_cur->files_num; i++)
         had_journal += journal_replay(journal_cur->files[i]);

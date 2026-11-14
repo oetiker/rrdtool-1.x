@@ -43,6 +43,9 @@ CLEANFILES = *.rrd info-cached1.xml \
 	modify5-testa1-mod.dump.tmp modify5-testa2-mod.dump.tmp \
 	rpn1.out rpn1.output.out create-with-source-5-test.png
 
+script_tests += security-daemon-tune-argc
+CLEANFILES += security-daemon-tune-argc-cached.log
+
 check_PROGRAMS = \
 	compat-cloexec \
 	rrd-open-security \

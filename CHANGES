@@ -10,6 +10,10 @@ Bugfixes
   options, a word that only starts like nan or inf, such as `nanxyz`, was
   taken as NaN or infinity and is now refused; `nan`, `-nan`, `inf`,
   `-inf` and `infinity` still work. @oetiker
+* rrdcached crashed, or kept a worker thread busy at 100% CPU, when a
+  client sent `TUNE` with fewer arguments than its announced count, as in
+  `TUNE file.rrd 50 --heartbeat value:300`. It now answers "Too few
+  arguments (expected 50, got 2)". @somethingwithproof
 * `rrdtool tune --deltapos abc` (also `--deltaneg` and
   `RRA#<index>:deltapos=abc`) silently set the value to 0. It now fails
   with "Unable to parse deltapos value 'abc'" and leaves the file
