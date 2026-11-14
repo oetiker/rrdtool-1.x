@@ -51,6 +51,10 @@ Bugfixes
 * On Windows, `rrdtool graph --lazy` redrew the graph every time when the
   file name contained non-ASCII characters (given in UTF-8); it now
   finds the existing file and leaves it alone like elsewhere. @oetiker
+* `make check` failed 17 tests on macOS: the test scripts relied on GNU
+  seq and sed, bash 4.3 and an unpadded `wc -l`, and graph7 wrote two
+  files whose names differ only in case. They now pass with the system
+  tools and on a case-insensitive filesystem. @somethingwithproof
 * Building on Windows with MSYS2 printed "warning: 'O_CREAT' redefined"
   and the same for `O_WRONLY`, `O_RDONLY`, `O_APPEND` and `O_RDWR`
   while compiling `compat-cloexec.c` and its test. @oetiker

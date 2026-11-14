@@ -23,9 +23,10 @@ $RRDTOOL create "$BUILD.rrd" --start 1300000000 --step 300 \
     DS:a:GAUGE:600:U:U DS:b:GAUGE:600:U:U RRA:AVERAGE:0.5:1:10
 report "create"
 
-# give DS a an empty last_ds via dump/restore
+# give DS a an empty last_ds via dump/restore (awk, not GNU sed's 0,/re/
+# address, so the edit also works with the BSD sed on macOS)
 $RRDTOOL dump "$BUILD.rrd" \
-    | sed '0,/<last_ds>U<\/last_ds>/s//<last_ds><\/last_ds>/' > "$BUILD.xml"
+    | awk '!done && sub(/<last_ds>U<\/last_ds>/, "<last_ds></last_ds>") { done = 1 } { print }' > "$BUILD.xml"
 $RRDTOOL restore -f "$BUILD.xml" "$BUILD.rrd"
 report "restore with empty last_ds"
 

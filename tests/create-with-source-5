@@ -86,7 +86,7 @@ TSTEP=10
 DELTAA=$(($SLOPEA / 60 * $TSTEP))
 DELTAB=$(($SLOPEB / 60 * $TSTEP))
 
-for T in $(seq $ST $TSTEP $(($ST + $STEPAB * 120)) ) ; do
+for T in $(seq -f %.0f $ST $TSTEP $(($ST + $STEPAB * 120)) ) ; do
 	UPDATEA="$UPDATEA $T:$VA"
 	UPDATEB="$UPDATEB $T:$VB"
         UPDATEAB="$UPDATEAB $T:$VA:$VB"

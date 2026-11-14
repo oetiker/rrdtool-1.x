@@ -21,13 +21,15 @@ report "update"
 
 is_cached && exit 0
 
+# xport_json <legend>: print the JSON export for one XPORT legend.
+# Returned on stdout rather than through a nameref, which needs bash 4.3
+# and so fails with the bash 3.2 that macOS ships as /bin/bash.
 xport_json() {
     local legend="$1"
-    local -n out="$2"
-    out=$($RRDTOOL xport --json \
+    $RRDTOOL xport --json \
         -s 1300000000 -e 1300000600 --step 300 \
         "DEF:v=${BUILD}.rrd:val:AVERAGE" \
-        "XPORT:v:${legend}")
+        "XPORT:v:${legend}"
 }
 
 # raw_legend_in_json <raw-json-output> <expected-escape-sequence>
@@ -48,36 +50,45 @@ if '$want' not in raw:
 "
 }
 
+# Each legend is assigned outside $(...): bash re-reads the text of a
+# command substitution, and MSYS2's bash drops a literal carriage return
+# while doing so, which would turn cr\x0dend into crend.
+
 # --- Tab (0x09) → \t ---
-xport_json $'tab\there' OUT
+LEGEND=$'tab\there'
+OUT=$(xport_json "$LEGEND")
 RC=$?
 [ $RC -eq 0 ] || fail $RC "xport tab legend: non-zero exit"
 raw_legend_in_json "$OUT" '\\t'
 report "json legend tab escaped"
 
 # --- Backspace (0x08) → \b ---
-xport_json $'back\x08space' OUT
+LEGEND=$'back\x08space'
+OUT=$(xport_json "$LEGEND")
 RC=$?
 [ $RC -eq 0 ] || fail $RC "xport backspace legend: non-zero exit"
 raw_legend_in_json "$OUT" '\\b'
 report "json legend backspace escaped"
 
 # --- Form feed (0x0c) → \f ---
-xport_json $'form\x0cfeed' OUT
+LEGEND=$'form\x0cfeed'
+OUT=$(xport_json "$LEGEND")
 RC=$?
 [ $RC -eq 0 ] || fail $RC "xport formfeed legend: non-zero exit"
 raw_legend_in_json "$OUT" '\\f'
 report "json legend formfeed escaped"
 
 # --- Carriage return (0x0d) → \r ---
-xport_json $'cr\x0dend' OUT
+LEGEND=$'cr\x0dend'
+OUT=$(xport_json "$LEGEND")
 RC=$?
 [ $RC -eq 0 ] || fail $RC "xport CR legend: non-zero exit"
 raw_legend_in_json "$OUT" '\\r'
 report "json legend carriage-return escaped"
 
 # --- Raw control char SOH (0x01) → \u0001 ---
-xport_json $'soh\x01char' OUT
+LEGEND=$'soh\x01char'
+OUT=$(xport_json "$LEGEND")
 RC=$?
 [ $RC -eq 0 ] || fail $RC "xport SOH legend: non-zero exit"
 raw_legend_in_json "$OUT" '\\u0001'
@@ -87,7 +98,7 @@ report "json legend raw-ctrl-char escaped as uXXXX"
 # A legend of 200 SOH bytes expands to 200*6=1200 chars, exceeding dbuf (1024).
 # escapeJSON must truncate at the last complete escape boundary.
 LONG_LEGEND=$(python3 -c "import sys; sys.stdout.write('\x01' * 200)")
-xport_json "${LONG_LEGEND}" OUT
+OUT=$(xport_json "${LONG_LEGEND}")
 RC=$?
 [ $RC -eq 0 ] || fail $RC "xport truncation legend: non-zero exit"
 python3 -c "

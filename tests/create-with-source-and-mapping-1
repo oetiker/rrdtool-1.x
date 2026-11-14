@@ -55,7 +55,7 @@ UPDATEAy1=
 UPDATEBy1=
 UPDATEAC1=
 V=10
-for A in $(seq $ST 60 $(($ST + 3000)) ) ; do
+for A in $(seq -f %.0f $ST 60 $(($ST + 3000)) ) ; do
 	V2=$(($V * 2))
 	V3=$(($V * 3))
 	V4=$(($V * 4))

@@ -11,7 +11,7 @@ report create
 
 # add some values to 
 N=10
-for T in $(seq 1300000020 60 1300003020) ; do
+for T in $(seq -f %.0f 1300000020 60 1300003020) ; do
 	U="$U $T:$N"
 	let N=$N+10
 done
