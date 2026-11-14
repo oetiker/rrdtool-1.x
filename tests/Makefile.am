@@ -13,7 +13,6 @@ TESTS = $(script_tests) compat-cloexec rrd-open-security tune-legacy-version tun
 	client-header-standalone tune-legacy-aberrant
 
 script_tests += security-rrdcached-response-bounds
-script_tests += security-client-response-validation
 
 EXTRA_DIST = Makefile.am \
 	functions $(script_tests) \
@@ -119,6 +118,8 @@ check_PROGRAMS += rrd-client-api
 endif
 rrd_client_api_SOURCES = test_rrd_client_api.c
 rrd_client_api_LDADD = ${top_builddir}/src/librrd.la
+
+script_tests += security-client-response-validation
 
 # Includes src/rrd_client.c to inject allocation failures and to talk to a
 # fake daemon over a socketpair.
