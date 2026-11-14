@@ -4,6 +4,10 @@
 #include <stdarg.h>
 
 static int fail_allocation, fail_seek, read_error, large_title, malloc_calls;
+static int failed;
+
+/* One line per assertion, so no line runs only when a check fails. */
+#define CHECK(c, ...) do { if (!(c)) { fprintf(stderr, __VA_ARGS__); failed = 1; } } while (0)
 
 static void *test_malloc(size_t size)
 {
@@ -83,23 +87,24 @@ static int test_snprintf(char *buffer, size_t size, const char *format, ...)
 #undef rrd_read
 #undef rrd_seek
 
-static int test_encoding(void)
+static void test_encoding(void)
 {
-    char buffer[128];
+    char buffer[128] = "";
     FILE *stream = tmpfile();
     size_t length;
 
-    if (stream == NULL)
-        return 1;
-    rrd_json_number(stream, 1.5);
-    fputc(' ', stream);
-    rrd_json_string(stream, "\xed\xa0\x80"); /* UTF-8 surrogate, not Unicode. */
-    rewind(stream);
-    length = fread(buffer, 1, sizeof(buffer) - 1, stream);
-    buffer[length] = '\0';
-    fclose(stream);
+    CHECK(stream != NULL, "tmpfile: %s\n", strerror(errno));
+    if (stream != NULL) {
+        rrd_json_number(stream, 1.5);
+        fputc(' ', stream);
+        rrd_json_string(stream, "\xed\xa0\x80"); /* UTF-8 surrogate, not Unicode. */
+        rewind(stream);
+        length = fread(buffer, 1, sizeof(buffer) - 1, stream);
+        buffer[length] = '\0';
+        fclose(stream);
+    }
     /* each byte of the invalid sequence becomes U+FFFD */
-    return strcmp(buffer, "1.5 \"\\ufffd\\ufffd\\ufffd\"") != 0;
+    CHECK(strcmp(buffer, "1.5 \"\\ufffd\\ufffd\\ufffd\"") == 0, "JSON encoding: %s\n", buffer);
 }
 
 int main(void)
@@ -113,8 +118,7 @@ int main(void)
     image_title_t title;
     int before;
 
-    if (test_encoding())
-        return 1;
+    test_encoding();
     rrd_init(&rrd);
     rrd.stat_head = &header;
     rrd.rra_def = &archive;
@@ -122,35 +126,27 @@ int main(void)
     fail_allocation = 1;
     rrd_clear_error();
     json_xport(1, args);
-    if (!rrd_test_error() || !strstr(rrd_get_error(), "allocating JSON xport"))
-        return 1;
+    CHECK(rrd_test_error() && strstr(rrd_get_error(), "allocating JSON xport"), "json_xport allocation failure: '%s'\n", rrd_get_error());
     rrd_clear_error();
     check_sources(&out, &rrd);
-    if (out.errors != 1)
-        return 1;
-    if (count_values(&out, &rrd, &file) != NULL || out.errors != 2)
-        return 1;
+    CHECK(out.errors == 1, "check_sources allocation failure: %lu errors\n", out.errors);
+    CHECK(count_values(&out, &rrd, &file) == NULL && out.errors == 2, "count_values allocation failure: %lu errors\n", out.errors);
     title = graph_title_split("title");
-    if (title.lines != NULL || title.count != 0)
-        return 1;
+    CHECK(title.lines == NULL && title.count == 0, "graph_title_split allocation failure kept %d lines\n", title.count);
     fail_allocation = 0;
     large_title = 1;
     before = malloc_calls;
     title = graph_title_split("virtual large title");
-    if (title.lines != NULL || title.count != 0 || malloc_calls != before)
-        return 1;
+    CHECK(title.lines == NULL && title.count == 0 && malloc_calls == before, "graph_title_split accepted an oversized title\n");
     large_title = 0;
     header.ds_cnt = (size_t) -1 / sizeof(value_counts_t) + 1;
-    if (count_values(&out, &rrd, &file) != NULL || out.errors != 3)
-        return 1;
+    CHECK(count_values(&out, &rrd, &file) == NULL && out.errors == 3, "count_values size overflow: %lu errors\n", out.errors);
     header.ds_cnt = 1;
     for (int mode = 0; mode < 3; mode++) {
         fail_seek = mode == 0;
         read_error = mode == 2;
         rrd_clear_error();
-        if (count_values(&out, &rrd, &file) != NULL ||
-            out.errors != (unsigned long) (4 + mode) || rrd_test_error())
-            return 1;
+        CHECK(count_values(&out, &rrd, &file) == NULL && out.errors == (unsigned long) (4 + mode) && !rrd_test_error(), "count_values I/O failure mode %d: %lu errors, '%s'\n", mode, out.errors, rrd_get_error());
     }
-    return 0;
+    return failed;
 }
