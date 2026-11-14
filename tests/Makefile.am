@@ -13,8 +13,6 @@ TESTS = $(script_tests) compat-cloexec rrd-open-security tune-legacy-version tun
 	client-header-standalone tune-legacy-aberrant
 
 script_tests += security-rrdcached-response-bounds
-script_tests += restore-xml-parse-error
-script_tests += security-create-source-prefill
 
 EXTRA_DIST = Makefile.am \
 	functions $(script_tests) \
@@ -113,6 +111,8 @@ fetch_empty_security_LDFLAGS = -static
 fetch_empty_security_LDADD = ${top_builddir}/src/librrd.la
 endif
 
+script_tests += restore-xml-parse-error
+script_tests += security-create-source-prefill
 if HAVE_STATIC_LIBRRD
 check_PROGRAMS += restore-text
 TESTS += restore-text
