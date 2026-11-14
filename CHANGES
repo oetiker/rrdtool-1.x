@@ -35,10 +35,6 @@ Bugfixes
   change nothing. The new `RRA#<index>:alpha=<value>` form (also `beta`,
   `gamma`, `smoothing-window`, `deltapos`, `deltaneg`, `failure-threshold`,
   `window-length`) tunes exactly one RRA. @oetiker
-* `rrdtool update` of a file whose data sources are all COMPUTE wrote the
-  first value through an uninitialized index; it now refuses the value
-  with "found extra data on update argument". An update with no value,
-  such as `N:`, still works. @somethingwithproof
 * A program that included only the installed `rrd_client.h` did not
   compile, with errors such as "unknown type name 'rrd_info_t'" and
   "unknown type name 'time_t'"; it first had to include `rrd.h`. The
@@ -48,6 +44,10 @@ Bugfixes
   status 0 when `out.csv` could not be created. It now fails with
   "Could not open 'out.csv' for writing: No such file or directory" (or
   the matching reason). @oetiker
+* `rrdtool update` of a file whose data sources are all COMPUTE wrote the
+  first value through an uninitialized index; it now refuses the value
+  with "found extra data on update argument". An update with no value,
+  such as `N:`, still works. @somethingwithproof
 * `make check CONTINUE=1`, which runs on past a failed check, reported
   a test as PASS when its last check had printed "FAILED:". Several
   tests also printed "FAILED: (rc=create)" without saying what failed;
