@@ -37,7 +37,8 @@ xcopy /Y /D %base_dir%\win32\rrdupdate.exe %release_dir%
 
 REM The following part needs to be checked and maintained after an update to a new vcpkg version
 REM Names of dlls can change over time, which has happened in the past
-REM e.g. glib-2.dll -> glib-2.0-0.dll, expat.dll -> libexpat.dll
+REM e.g. glib-2.dll -> glib-2.0-0.dll, expat.dll -> libexpat.dll,
+REM zlib1.dll -> z.dll (zlib 1.3.2)
 xcopy /Y /D %base_dir%\vcpkg\installed\%1-windows\bin\brotlicommon.dll %release_dir%
 xcopy /Y /D %base_dir%\vcpkg\installed\%1-windows\bin\brotlidec.dll %release_dir%
 xcopy /Y /D %base_dir%\vcpkg\installed\%1-windows\bin\bz2.dll %release_dir%
@@ -62,6 +63,6 @@ xcopy /Y /D %base_dir%\vcpkg\installed\%1-windows\bin\pangoft2-1.0-0.dll %releas
 xcopy /Y /D %base_dir%\vcpkg\installed\%1-windows\bin\pangowin32-1.0-0.dll %release_dir%
 xcopy /Y /D %base_dir%\vcpkg\installed\%1-windows\bin\pcre2-8.dll %release_dir%
 xcopy /Y /D %base_dir%\vcpkg\installed\%1-windows\bin\pixman-1-0.dll %release_dir%
-xcopy /Y /D %base_dir%\vcpkg\installed\%1-windows\bin\zlib1.dll %release_dir%
+xcopy /Y /D %base_dir%\vcpkg\installed\%1-windows\bin\z.dll %release_dir%
 
 popd
