@@ -7,7 +7,8 @@ script_tests = modify1 modify2 modify3 modify4 modify5 \
 	vformatter1 xport1 xport2 xport3 list1 \
 	pdp-calc1 graph3 graph4 graph5 graph6 graph7 info-cached1 xport4 epoch1 modify6 cached-path1 cached-lastupdate1 security-header-counts \
 	security-fetch-arithmetic security-fetch-daemon-arithmetic cached-sockpath1 cached-update1 info-cached2 graph-cairo-error \
-	cached-client-api cached-journal-long create-no-overwrite functions-report cached-journal-crash cached-first-last first-last-error graph-incomplete-file cached-long-line graph-export-open cached-last-exact cached-update-skip-past graph-lazy functions-fail
+	cached-client-api cached-journal-long create-no-overwrite functions-report cached-journal-crash cached-first-last first-last-error graph-incomplete-file cached-long-line graph-export-open cached-last-exact cached-update-skip-past graph-lazy functions-fail \
+	create-compute-prev
 
 TESTS = $(script_tests) compat-cloexec rrd-open-security tune-legacy-version tune-daemon-error \
 	client-header-standalone tune-legacy-aberrant
@@ -150,6 +151,25 @@ CLEANFILES += cached/graph1.output.out cached/rpn1.out cached/rpn1.output.out \
 	cached/graph-cairo-error.out cached/graph-cairo-error.err \
 	cached/graph-cairo-error.probe cached/graph-cairo-error.png \
 	cached/graph-cairo-error.pdf cached/graph-cairo-error.eps
+
+script_tests += security-hw-dependencies security-compute-ds security-header-fields
+script_tests += security-time-fields rrd-open-compat
+script_tests += tune-reopen compat-released-tune
+EXTRA_DIST += compat-released-tune-step.bin compat-released-tune-hw.bin
+CLEANFILES += tune-reopen-partner.out tune-reopen-compute.out \
+	compat-released-tune.out
+if HAVE_STATIC_LIBRRD
+check_PROGRAMS += rpn-failures
+TESTS += rpn-failures
+rpn_failures_SOURCES = test_rpn_failures.c
+rpn_failures_LDFLAGS = -static
+rpn_failures_LDADD = ${top_builddir}/src/librrd.la
+check_PROGRAMS += modify-failures
+TESTS += modify-failures
+modify_failures_SOURCES = test_modify_failures.c
+modify_failures_LDFLAGS = -static
+modify_failures_LDADD = ${top_builddir}/src/librrd.la
+endif
 
 if HAVE_STATIC_LIBRRD
 if BUILD_RRDGRAPH

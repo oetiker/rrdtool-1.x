@@ -8,6 +8,7 @@
  *****************************************************************************/
 #include "rrd_tool.h"
 #include "rrd_rpncalc.h"
+#include "rrd_hw.h"         /* rrd_check_hw_dependencies */
 #include "rrd_client.h"
 #include "rrd_restore.h"   /* write_file */
 #include "rrd_create.h"    /* parseDS */
@@ -184,6 +185,36 @@ static int copy_or_delete_DSs(const rrd_t *in, rrd_t *out, char *ops) {
 	    goto done;
 	}
     }
+
+    /* COMPUTE programs refer to other data sources by index, so the
+       references need renumbering when a DS in front of them goes away,
+       and a DS a remaining program uses can not go away at all. */
+    for (unsigned int out_ds = 0 ; out_ds < out->stat_head->ds_cnt ; out_ds++) {
+	rpn_cdefds_t *rpnc;
+
+	if (dst_conv(out->ds_def[out_ds].dst) != DST_CDEF)
+	    continue;
+	rpnc = (rpn_cdefds_t *) &out->ds_def[out_ds].par[DS_cdef];
+	for (int i = 0 ; i < DS_CDEF_MAX_RPN_NODES && rpnc[i].op != OP_END ; i++) {
+	    int new_ds = 0;
+
+	    if (rpnc[i].op != OP_VARIABLE && rpnc[i].op != OP_PREV_OTHER)
+		continue;
+	    if (rpnc[i].val < 0
+		|| (unsigned long) rpnc[i].val >= in->stat_head->ds_cnt)
+		continue;   /* rrd_open already refuses such a program */
+	    if (ops[rpnc[i].val] != 'c') {
+		rrd_set_error("cannot delete DS %s: COMPUTE DS %s uses it",
+			      in->ds_def[rpnc[i].val].ds_nam,
+			      out->ds_def[out_ds].ds_nam);
+		goto done;
+	    }
+	    for (int k = 0 ; k < rpnc[i].val ; k++)
+		if (ops[k] == 'c')
+		    new_ds++;
+	    rpnc[i].val = (short) new_ds;
+	}
+    }
     // only if we did all iterations without any problems will we arrive here
     rc = 0;
 done:
@@ -210,7 +241,17 @@ static int handle_rra_defs(const rrd_t *in, rrd_t *out,
     cdp_prep_t empty_cdp_prep;
     memset(&empty_cdp_prep, 0, sizeof(empty_cdp_prep));
 
+    /* new index of every input RRA, or -1 when it is deleted. Holt-Winters
+       RRAs refer to their partners by index, so the links need renumbering
+       when an RRA in front of them goes away. */
+    long *new_index = malloc(sizeof(long) * (in->stat_head->rra_cnt + 1));
+    if (new_index == NULL) {
+	rrd_set_error("Cannot allocate memory");
+	goto done;
+    }
+
     for (j = 0 ; j < in->stat_head->rra_cnt ; j++) {
+	new_index[j] = -1;
 	if (total_in_rra_rows) 
 	    *total_in_rra_rows +=  in->rra_def[j].row_cnt;
 
@@ -268,6 +309,8 @@ static int handle_rra_defs(const rrd_t *in, rrd_t *out,
 					 sizeof(rra_def_t));
 	if (out->rra_def == NULL) goto done;
 
+	new_index[j] = out->stat_head->rra_cnt;
+
 	// adapt row count:
 	out->rra_def[out->stat_head->rra_cnt].row_cnt = final_row_count;
 
@@ -313,8 +356,36 @@ static int handle_rra_defs(const rrd_t *in, rrd_t *out,
 
 	out->stat_head->rra_cnt++;
     }
+
+    /* renumber the Holt-Winters partner links. */
+    for (j = 0 ; j < out->stat_head->rra_cnt ; j++) {
+	rra_def_t *rra = out->rra_def + j;
+	enum cf_en cf = rrd_cf_conv(rra->cf_nam);
+	unsigned long dep;
+	if (cf != CF_HWPREDICT && cf != CF_MHWPREDICT && cf != CF_SEASONAL
+	    && cf != CF_DEVSEASONAL && cf != CF_DEVPREDICT
+	    && cf != CF_FAILURES)
+	    continue;
+	dep = rra->par[RRA_dependent_rra_idx].u_cnt;
+	/* a link past the last RRA was already wrong in the input file
+	   (released tune left such links behind); say so instead of
+	   blaming a deletion */
+	if (dep >= in->stat_head->rra_cnt) {
+	    rrd_set_error("the %s RRA refers to RRA %lu, but there are "
+			  "only %lu RRAs", rra->cf_nam, dep,
+			  in->stat_head->rra_cnt);
+	    goto done;
+	}
+	if (new_index[dep] < 0) {
+	    rrd_set_error("cannot delete RRA %lu: the %s RRA that is left "
+			  "depends on it", dep, rra->cf_nam);
+	    goto done;
+	}
+	rra->par[RRA_dependent_rra_idx].u_cnt = new_index[dep];
+    }
     rc = 0;
 done:
+    free(new_index);
     return rc;
 }
 
@@ -730,7 +801,18 @@ static int stretch_rras(rrd_t *out, int stretch) {
     }
     
     out->stat_head->pdp_step /= stretch;
-    
+
+    /* the unknown seconds of the PDP being built can not exceed the time
+       that has passed in it, and that shrank with the step */
+    for (ds_index = 0 ; ds_index < ds_cnt ; ds_index++) {
+	unsigned long elapsed =
+	    out->live_head->last_up % out->stat_head->pdp_step;
+	unsigned long *unkn =
+	    &out->pdp_prep[ds_index].scratch[PDP_unkn_sec_cnt].u_cnt;
+	if (*unkn > elapsed)
+	    *unkn = elapsed;
+    }
+
     rc =0;
 done:
     return rc;
@@ -852,6 +934,10 @@ static rrd_t *rrd_modify_structure(const rrd_t *in,
 	    ds_ops[ds_ops_cnt++] = 'a';
 	}
     }
+    if (out->stat_head->ds_cnt == 0) {
+	rrd_set_error("cannot delete every data source");
+	goto done;
+    }
     
     /* prepare explicit data source index to map from output index to
        input index */
@@ -912,7 +998,18 @@ static rrd_t *rrd_modify_structure(const rrd_t *in,
     
     rc = add_rras(in, out, ds_map, rra_mod_ops, rra_mod_ops_cnt, hash);
     if (rc != 0) goto done;
-    
+
+    /* rrd_open refuses files without RRAs or with Holt-Winters RRAs whose
+       partner links do not fit, so do not write them */
+    rc = -1;
+    if (out->stat_head->rra_cnt == 0) {
+	rrd_set_error("cannot delete every RRA");
+	goto done;
+    }
+    if (rrd_check_hw_dependencies(out) != 0)
+	goto done;
+    rc = 0;
+
 
 done:
     if (ds_ops != NULL) free(ds_ops);

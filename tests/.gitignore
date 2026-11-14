@@ -12,6 +12,8 @@
 /fetch-empty-security
 /.libs/
 /graph-security
+/rpn-failures
+/modify-failures
 /daemon-fetch-security
 /tune-legacy-version
 /tune-daemon-error

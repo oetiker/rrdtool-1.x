@@ -1,0 +1,35 @@
+#!/bin/bash
+
+. $(dirname $0)/functions
+
+PREFIX=$BUILDDIR/$(basename $0)-test
+ST=1300000000
+
+rm -f ${PREFIX}*.rrd
+
+# A COMPUTE program is evaluated from the current PDP values only, so
+# PREV(name) has no previous value to read: update used to stop with
+# "VDEF made it into rpn_calc... aborting" on every sample.  create
+# refuses it like the other operators COMPUTE cannot evaluate.
+! $RRDTOOL create ${PREFIX}prev.rrd --start $ST --step 60 \
+	DS:a:GAUGE:120:U:U 'DS:c:COMPUTE:a,PREV(a),+' RRA:AVERAGE:0.5:1:10 2>${PREFIX}prev.err
+report create-refuses-prev-name
+grep -q "PREV(name)" ${PREFIX}prev.err
+report create-names-prev-name
+[ ! -e ${PREFIX}prev.rrd ]
+report create-leaves-no-file
+
+# The operators that were already refused must stay refused.
+for expr in 'a,PREV,+' 'a,COUNT,+'; do
+    ! $RRDTOOL create ${PREFIX}op.rrd --start $ST --step 60 \
+        DS:a:GAUGE:120:U:U "DS:c:COMPUTE:$expr" RRA:AVERAGE:0.5:1:10 2>/dev/null
+    report create-refuses-$expr
+done
+
+$RRDTOOL create ${PREFIX}ok.rrd --start $ST --step 60 \
+	DS:a:GAUGE:120:U:U 'DS:c:COMPUTE:a,2,*' RRA:AVERAGE:0.5:1:10
+report create-plain-compute
+$RRDTOOL update ${PREFIX}ok.rrd $(($ST+60)):5 $(($ST+120)):6
+report update-plain-compute
+
+rm -f ${PREFIX}*.rrd ${PREFIX}*.err

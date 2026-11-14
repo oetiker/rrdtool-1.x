@@ -84,6 +84,9 @@ short     rpn_compact(
     short *count);
 rpnp_t   *rpn_expand(
     rpn_cdefds_t *rpnc);
+int       rpn_compact_check(
+    const rpn_cdefds_t *rpnc,
+    unsigned long ds_cnt);
 void      rpn_compact2str(
     rpn_cdefds_t *rpnc,
     ds_def_t *ds_def,

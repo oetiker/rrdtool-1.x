@@ -952,6 +952,20 @@ static int _rrd_updatex(
     if (rrd_file == NULL) {
         goto err_free;
     }
+    /* rrd_open accepts both conditions so that info, dump and fetch keep
+     * working on files written by released rrdtool tune; update is where
+     * they matter. */
+    if (rrd_check_hw_dependencies(&rrd) != 0) {
+        goto err_close;
+    }
+    /* Any count above pdp_step already marks the whole PDP unknown, so
+     * clamping it keeps the result and keeps the arithmetic in range. */
+    for (unsigned long i = 0; i < rrd.stat_head->ds_cnt; i++) {
+        if (rrd.pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt >
+            rrd.stat_head->pdp_step)
+            rrd.pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt =
+                rrd.stat_head->pdp_step;
+    }
     /* We are now at the beginning of the rra's */
     rra_begin = rrd_file->header_len;
 

@@ -85,7 +85,8 @@ time_t rrd_first_r(
     const char *filename,
     const int rraindex)
 {
-    off_t     rra_start, timer;
+    off_t     rra_start;
+    long long timer;
     time_t    then = -1;
     rrd_t     rrd;
     rrd_file_t *rrd_file;
@@ -106,15 +107,16 @@ time_t rrd_first_r(
              (rra_start +
               (rrd.rra_ptr[rraindex].cur_row + 1) *
               rrd.stat_head->ds_cnt * sizeof(rrd_value_t)), SEEK_SET);
-    timer = -(long)(rrd.rra_def[rraindex].row_cnt - 1);
+    /* rrd_open keeps (row_cnt - 1) * pdp_cnt * pdp_step within int64_t */
+    timer = -(long long) (rrd.rra_def[rraindex].row_cnt - 1);
     if (rrd.rra_ptr[rraindex].cur_row + 1 > rrd.rra_def[rraindex].row_cnt) {
         rrd_seek(rrd_file, rra_start, SEEK_SET);
     }
     then = (rrd.live_head->last_up -
             rrd.live_head->last_up %
             (rrd.rra_def[rraindex].pdp_cnt * rrd.stat_head->pdp_step)) +
-        (timer * (long) rrd.rra_def[rraindex].pdp_cnt *
-         (long) rrd.stat_head->pdp_step);
+        (time_t) (timer * (long long) rrd.rra_def[rraindex].pdp_cnt *
+                  (long long) rrd.stat_head->pdp_step);
   err_close:
     rrd_close(rrd_file);
   err_free:

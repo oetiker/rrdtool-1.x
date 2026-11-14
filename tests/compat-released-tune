@@ -1,0 +1,70 @@
+#!/bin/bash
+
+. "$(dirname "$0")/functions"
+
+# The fixtures were written by rrdtool 1.11.0 on LP64 little-endian:
+#   compat-released-tune-step.bin:
+#     create --start 1000000000 --step 300 DS:x:GAUGE:100:U:U RRA:AVERAGE:0.5:1:10
+#     update 1000000010:1 1000000290:2
+#     tune --step 60 'RRA#0:+1'
+#   which leaves ds[x].unknown_sec = 90 with a 60 second step, and
+#   compat-released-tune-hw.bin:
+#     create --start 1000000000 --step 300 DS:val:GAUGE:600:U:U \
+#       RRA:AVERAGE:0.5:1:10 RRA:HWPREDICT:20:0.1:0.0035:5
+#     tune DELRRA:0
+#   which leaves every Holt-Winters partner link one RRA too far.
+# Read-only commands must keep working on both so the data stays
+# reachable after an upgrade.
+[ -n "$RRDCACHED_ADDRESS" ] && exit 77
+[ -n "$MSYSTEM" ] && exit 77 # getconf describes MSYS, not the MinGW binary.
+test "$(getconf LONG_BIT)" = 64 || exit 77
+
+BUILD="$BUILDDIR/$(basename "$0")"
+
+cp "$BASEDIR/compat-released-tune-step.bin" "${BUILD}-step.rrd" || fail $? copy
+chmod u+w "${BUILD}-step.rrd"
+$RRDTOOL info "${BUILD}-step.rrd" >"${BUILD}.out" 2>&1
+if grep -q "another architecture" "${BUILD}.out"; then
+  exit 77
+fi
+grep -q '^ds\[x\]\.unknown_sec = 90$' "${BUILD}.out" || \
+  fail 1 "info on a file from released tune --step: $(cat "${BUILD}.out")"
+ok "info on a file from released tune --step"
+$RRDTOOL fetch "${BUILD}-step.rrd" AVERAGE --start 1000000000 --end 1000000300 >/dev/null
+report "fetch on a file from released tune --step"
+$RRDTOOL dump "${BUILD}-step.rrd" >/dev/null
+report "dump on a file from released tune --step"
+$RRDTOOL tune "${BUILD}-step.rrd" --heartbeat x:120 >/dev/null
+report "tune on a file from released tune --step"
+$RRDTOOL update "${BUILD}-step.rrd" 1000000300:3 1000000360:4
+report "update on a file from released tune --step"
+unknown=$($RRDTOOL info "${BUILD}-step.rrd" | sed -n 's/^ds\[x\]\.unknown_sec = //p')
+[ -n "$unknown" ] && [ "$unknown" -le 60 ]
+report "update brings the unknown seconds back within the step"
+
+cp "$BASEDIR/compat-released-tune-hw.bin" "${BUILD}-hw.rrd" || fail $? copy
+chmod u+w "${BUILD}-hw.rrd"
+$RRDTOOL info "${BUILD}-hw.rrd" >/dev/null
+report "info on a file with stale Holt-Winters links"
+$RRDTOOL dump "${BUILD}-hw.rrd" >"${BUILD}-hw.xml"
+report "dump on a file with stale Holt-Winters links"
+
+# update follows the links, so it must refuse them instead.
+$RRDTOOL update "${BUILD}-hw.rrd" 1000000300:1 >"${BUILD}.out" 2>&1
+status=$?
+[ "$status" -ne 0 ] && [ "$status" -lt 128 ] || \
+  fail 1 "update with stale Holt-Winters links: exit status $status"
+grep -q "not its Holt-Winters partner" "${BUILD}.out" || \
+  fail 1 "update did not explain the stale links: $(cat "${BUILD}.out")"
+ok "update refuses stale Holt-Winters links"
+
+# The dump is the repair path: renumber the links and restore.
+perl -pe 's{<dependent_rra_idx>(\d+)</dependent_rra_idx>}{"<dependent_rra_idx>" . ($1 - 1) . "</dependent_rra_idx>"}e' \
+  "${BUILD}-hw.xml" >"${BUILD}-hw-fixed.xml"
+rm -f "${BUILD}-hw-fixed.rrd"
+$RRDTOOL restore "${BUILD}-hw-fixed.xml" "${BUILD}-hw-fixed.rrd"
+report "restore the repaired dump"
+$RRDTOOL update "${BUILD}-hw-fixed.rrd" 1000000300:1
+report "update the repaired file"
+
+rm -f "${BUILD}"*.rrd "${BUILD}"*.xml "${BUILD}.out"

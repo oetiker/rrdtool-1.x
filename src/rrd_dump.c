@@ -203,7 +203,7 @@ int rrd_dump_cb_r(
 
     for (i = 0; i < rrd.stat_head->rra_cnt; i++) {
 
-        long      timer = 0;
+        long long timer = 0;
 
         rra_start = rra_next;
         rra_next += (rrd.stat_head->ds_cnt
@@ -432,7 +432,8 @@ int rrd_dump_cb_r(
         rrd_seek(rrd_file, (rra_start + (rrd.rra_ptr[i].cur_row + 1)
                             * rrd.stat_head->ds_cnt
                             * sizeof(rrd_value_t)), SEEK_SET);
-        timer = -(long)(rrd.rra_def[i].row_cnt - 1);
+        /* rrd_open keeps (row_cnt - 1) * pdp_cnt * pdp_step within int64_t */
+        timer = -(long long) (rrd.rra_def[i].row_cnt - 1);
         ii = rrd.rra_ptr[i].cur_row;
         for (ix = 0; ix < rrd.rra_def[i].row_cnt; ix++) {
             ii++;
@@ -443,7 +444,8 @@ int rrd_dump_cb_r(
             now = (rrd.live_head->last_up
                    - rrd.live_head->last_up
                    % (rrd.rra_def[i].pdp_cnt * rrd.stat_head->pdp_step))
-                + (timer * (long)rrd.rra_def[i].pdp_cnt * (long)rrd.stat_head->pdp_step);
+                + (time_t) (timer * (long long) rrd.rra_def[i].pdp_cnt
+                            * (long long) rrd.stat_head->pdp_step);
 
             timer++;
 #ifdef HAVE_STRFTIME
