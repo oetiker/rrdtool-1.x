@@ -2,16 +2,27 @@
 # To customize, copy this file to /etc/systemd/system/
 # and edit there
 #
+# Every client that can open the socket may update, create and flush
+# files (within the service's base directory), so keep it to root and
+# root's group; add SocketGroup= for a group of trusted users.
+#
 
 [Unit]
 Description=sockets activating rrdcached
 Documentation=man:rrdcached(1)
 
 [Socket]
-ListenStream=/tmp/rrdcached.sock
+ListenStream=/run/rrdcached/rrdcached.sock
 #ListenStream=[::1]:42217
-#DirectoryMode=0755
-#SocketMode=0666
+SocketMode=0660
+DirectoryMode=0755
+# rrdcached.service creates its state directory when it first starts,
+# but a client resolves the file names it sends (below -b) before it
+# connects, and so before socket activation starts the service
+ExecStartPre=/bin/mkdir -p /var/lib/rrdcached/db /var/lib/rrdcached/journal
+# give them their SELinux label, where there is one (see rrdcached(1))
+ExecStartPre=-/bin/sh -c 'command -v restorecon >/dev/null && restorecon -R /var/lib/rrdcached || :'
+#SocketGroup=
 #BindToDevice=
 
 [Install]
