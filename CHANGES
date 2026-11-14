@@ -35,6 +35,23 @@ Bugfixes
   change nothing. The new `RRA#<index>:alpha=<value>` form (also `beta`,
   `gamma`, `smoothing-window`, `deltapos`, `deltaneg`, `failure-threshold`,
   `window-length`) tunes exactly one RRA. @oetiker
+* librrd's rrdcached client trusted the daemon's replies: a reply that
+  announced more lines than it sent, a line with a NUL byte, or a `fetch`
+  reply whose header did not match its rows could make it read
+  uninitialized memory, overflow a size computation or wait forever. It
+  now refuses malformed replies with an error and closes the connection.
+  Replies that rrdcached sends are read as before. Newly refused: a line
+  longer than 4096 bytes or cut off by the end of the connection; hex
+  numbers, numbers followed by other text and numbers out of range, in
+  the status line, `fetch` headers and rows, `STATS` counters, `info`
+  values and the `first`, `last` and `lastupdate` times (a leading 0 now
+  means decimal, not octal); an `info` number that is not a number (read
+  as NaN or 0 before) or an unknown `info` type code; extra names or
+  values on a `fetch` line, or a row with an unexpected timestamp;
+  `first` and `last` replies with a body; `lastupdate` replies with no
+  data source or an empty value; and `STATS` replies with a line without
+  a key or a known counter that does not parse, where all of `STATS` now
+  fails instead of skipping that entry. @somethingwithproof
 * A program that included only the installed `rrd_client.h` did not
   compile, with errors such as "unknown type name 'rrd_info_t'" and
   "unknown type name 'time_t'"; it first had to include `rrd.h`. The
