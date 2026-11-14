@@ -1,0 +1,24 @@
+#!/bin/bash
+
+. "$(dirname "$0")/functions"
+
+# With a seasonal period of 1 the SEASONAL and DEVSEASONAL RRAs have one
+# row. An update that skips more than two steps resets them from the
+# looked-up seasonal coefficients, which were only looked up for RRAs
+# with more than one row, so update dereferenced NULL.
+BUILD="$BUILDDIR/$(basename "$0")"
+
+rm -f "${BUILD}.rrd"
+$RRDTOOL create "${BUILD}.rrd" --step 1 --start 1000000000 \
+  DS:a:GAUGE:100:U:U RRA:HWPREDICT:20:0.1:0.0035:1
+report create
+
+$RRDTOOL update "${BUILD}.rrd" 1000000001:1 1000000010:2 1000000011:3 \
+  1000000030:4
+report "update across gaps with seasonal period 1"
+
+$RRDTOOL fetch "${BUILD}.rrd" SEASONAL -s 1000000020 -e 1000000030 \
+  >/dev/null
+report "fetch the SEASONAL RRA"
+
+rm -f "${BUILD}.rrd"

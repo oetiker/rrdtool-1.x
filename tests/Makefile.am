@@ -70,6 +70,15 @@ rrd_open_security_LDADD = \
 lastupdate_v_SOURCES = test_lastupdate_v.c
 lastupdate_v_LDADD = ${top_builddir}/src/librrd.la
 
+script_tests += security-hw-smoothing-window hw-bulk-update-period1
+if HAVE_STATIC_LIBRRD
+check_PROGRAMS += hw-failures
+TESTS += hw-failures
+hw_failures_SOURCES = test_hw_failures.c
+hw_failures_LDFLAGS = -static
+hw_failures_LDADD = ${top_builddir}/src/librrd.la
+endif
+
 tune_legacy_version_SOURCES = \
 	test_tune_legacy_version.c
 

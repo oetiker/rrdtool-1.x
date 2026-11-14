@@ -520,7 +520,7 @@ int parseRRA(
                 break;
             default:
                 if (rrd_strtodbl(token, NULL, &tmpdbl, NULL) != 2
-                    || tmpdbl < 0.0 || tmpdbl >= 1.0) {
+                    || !(tmpdbl >= 0.0 && tmpdbl < 1.0)) {
                     rrd_set_error("Invalid xff: must be between 0 and 1");
                 }
                 rra_def->par[RRA_cdp_xff_val].u_val = tmpdbl;
@@ -532,7 +532,7 @@ int parseRRA(
             case CF_HWPREDICT:
             case CF_MHWPREDICT:
                 if (rrd_strtodbl(token, NULL, &tmpdbl, NULL) != 2
-                    || tmpdbl <= 0.0 || tmpdbl >= 1.0) {
+                    || !(tmpdbl > 0.0 && tmpdbl < 1.0)) {
                     rrd_set_error("Invalid alpha: must be between 0 and 1");
                 }
                 rra_def->par[RRA_hw_alpha].u_val = tmpdbl;
@@ -540,7 +540,7 @@ int parseRRA(
             case CF_DEVSEASONAL:
             case CF_SEASONAL:
                 if (rrd_strtodbl(token, NULL, &tmpdbl, NULL) != 2
-                    || tmpdbl <= 0.0 || tmpdbl >= 1.0) {
+                    || !(tmpdbl > 0.0 && tmpdbl < 1.0)) {
                     rrd_set_error("Invalid gamma: must be between 0 and 1");
                 }
                 rra_def->par[RRA_seasonal_gamma].u_val = tmpdbl;
@@ -574,7 +574,7 @@ int parseRRA(
             case CF_HWPREDICT:
             case CF_MHWPREDICT:
                 if (rrd_strtodbl(token, NULL, &tmpdbl, NULL) != 2
-                    || tmpdbl < 0.0 || tmpdbl > 1.0) {
+                    || !(tmpdbl >= 0.0 && tmpdbl <= 1.0)) {
                     rrd_set_error("Invalid beta: must be between 0 and 1");
                 }
                 rra_def->par[RRA_hw_beta].u_val = tmpdbl;
@@ -641,10 +641,10 @@ int parseRRA(
                         || atoi(*require_version) < atoi(RRD_VERSION4)) {
                         *require_version = RRD_VERSION4;    /* smoothing-window causes Version 4 */
                     }
-                    if (rra_def->par[RRA_seasonal_smoothing_window].u_val <
-                        0.0
-                        || rra_def->par[RRA_seasonal_smoothing_window].u_val >
-                        1.0) {
+                    if (!(rra_def->par[RRA_seasonal_smoothing_window].u_val
+                          >= 0.0
+                          && rra_def->par[RRA_seasonal_smoothing_window].u_val
+                          <= 1.0)) {
                         rrd_set_error
                             ("Invalid smoothing-window %f: must be between 0 and 1",
                              rra_def->
