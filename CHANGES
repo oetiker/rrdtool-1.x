@@ -301,11 +301,6 @@ Bugfixes
   such lines are cut short and still end with a newline. A `FETCH` or
   `FETCHBIN` that runs out of memory while building its answer now closes
   the connection instead of sending a partial reply. @somethingwithproof
-* `rrdtool graph out.png DEF` (a `DEF` without any arguments) crashed with
-  a segmentation fault. It now fails with an error message. (#1353) @SAY-5
-* rrdcached started through systemd socket activation (`rrdcached.socket`)
-  no longer crashes with a segmentation fault when the first client
-  connects. (#1387) @emwgit
 * Building from the release tarball in a separate directory used the
   release machine's `rrd_config.h` instead of the one configure wrote; the
   tarball no longer contains it. @somethingwithproof
@@ -342,6 +337,11 @@ Bugfixes
   that were not built instead of failing them. @somethingwithproof
 * The PDF pages in a release tarball are reproducible with any
   Ghostscript 9.55 or later, not only Debian's. @somethingwithproof
+* `rrdtool graph out.png DEF` (a `DEF` without any arguments) crashed with
+  a segmentation fault. It now fails with an error message. (#1353) @SAY-5
+* rrdcached started through systemd socket activation (`rrdcached.socket`)
+  no longer crashes with a segmentation fault when the first client
+  connects. (#1387) @emwgit
 
 Features
 --------
