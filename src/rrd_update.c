@@ -1409,7 +1409,13 @@ static int parse_ds(
     }
     *p = '\0';
     i = 1;
-    updvals[tmpl_idx[i++]] = p + 1;
+    /* tmpl_idx has no data slot when every DS is COMPUTE (tmpl_cnt == 1) */
+    if (i < tmpl_cnt) {
+        updvals[tmpl_idx[i++]] = p + 1;
+    } else if (p[1] != '\0') {
+        rrd_set_error("found extra data on update argument: %s", p + 1);
+        return -1;
+    }
     while (*(++p)) {
         if (*p == ':') {
             *p = '\0';

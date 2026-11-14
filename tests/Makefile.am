@@ -34,6 +34,8 @@ AM_TESTS_ENVIRONMENT = \
 	BUILDDIR=${abs_builddir} ; export BUILDDIR ; \
 	TOP_BUILDDIR=${abs_top_builddir} ; export TOP_BUILDDIR ;
 
+script_tests += update-compute-only
+
 CLEANFILES = *.rrd info-cached1.xml \
 	ct.out dur.out graph1.out graph1.output.out graph2.output.out \
 	graph4.pdf graph5-full.pdf graph5-clipped.pdf graph5-angle.pdf \
