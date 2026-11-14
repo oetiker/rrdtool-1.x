@@ -5,19 +5,19 @@
 # rrd_open, and rrd_tune after a daemon request, save the current error
 # and set it again. The message quotes the file's version, so setting it
 # with the message as the printf format let a version of "9%s%s" crash
-# rrdtool, and %n write to memory.
+# rrdtool, and %n write to memory. The crafted version is "9%s%",
+# terminated, so it reaches the version check however the header is checked.
 [ -n "$RRDCACHED_ADDRESS" ] && exit 77
 
 BUILD="$BUILDDIR/$(basename "$0")"
-PATTERN="can't handle RRD file version 9%s%s"
+PATTERN="can't handle RRD file version 9%s%"
 
 $RRDTOOL create "${BUILD}.rrd" --start 900000000 --step 60 \
   DS:value:GAUGE:120:U:U RRA:AVERAGE:0.5:1:2 || fail $? create
 
-# The version follows the 4-byte cookie on every platform. Five bytes
-# leave it unterminated, but create zeroes the padding that follows.
+# The 5-byte version follows the 4-byte cookie on every platform.
 cp "${BUILD}.rrd" "${BUILD}-crafted.rrd"
-perl -0777 -pi -e 'substr($_, 4, 5, "9%s%s")' "${BUILD}-crafted.rrd"
+perl -0777 -pi -e 'substr($_, 4, 5, "9%s%\0")' "${BUILD}-crafted.rrd"
 
 expect_version_error () {
   local what="$1"
