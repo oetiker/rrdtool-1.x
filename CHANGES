@@ -26,6 +26,11 @@ Bugfixes
 * The release tarball did not contain the tests of the Python binding
   (`bindings/python/tests`), so they could not be run from it. They are
   included now. @oetiker
+* Opening a file whose header RRDtool refuses restored the error message
+  with the message itself as the printf format, so a crafted RRD with `%`
+  in its version string crashed `rrdtool info`, and `%n` could write to
+  memory. `tune` and graph's DEF parsing restored errors the same way.
+  @somethingwithproof
 * In an RRD with several Holt-Winters sets, `rrdtool tune --alpha`,
   `--gamma`, `--window-length` and the other Holt-Winters options changed
   only the first matching RRA and silently left the others alone; `--alpha`

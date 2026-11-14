@@ -1294,7 +1294,7 @@ static int parse_def(
                                   | PARSE_DAEMON | PARSE_RETRY);
         /* on error, we restore the original error and return */
         if (!gdp) {
-            rrd_set_error(original_error);
+            rrd_set_error("%s", original_error);
             return 1;
         }
     }

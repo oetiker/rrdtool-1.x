@@ -52,6 +52,9 @@ check_PROGRAMS = \
 	tune-legacy-aberrant \
 	client-header-standalone
 
+script_tests += security-error-format
+CLEANFILES += security-error-format-cached.log
+
 # compile-only: includes nothing but the installed rrd_client.h
 client_header_standalone_SOURCES = test_client_header_standalone.c
 

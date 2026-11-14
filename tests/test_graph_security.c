@@ -141,6 +141,33 @@ static int test_invalid_ranges(void)
     return 0;
 }
 
+/* Record a failure, print the diagnostic and keep going; a single line so
+ * no failure-only statement is left over. */
+#define TEST_CHECK_SOFT(c, ...) \
+    do { if (!(c)) { fprintf(stderr, __VA_ARGS__); failed = 1; } } while (0)
+
+static int test_def_retry_error(void)
+{
+    /* The retry keeps the first error and restores it if the retry fails
+     * too; the restored text comes from the argument, so it must not be
+     * used as a format. */
+    const char *args[] = {
+        "DEF:debug=bad%literal:vname=x:rrd=missing.rrd:ds=a:cf=INVALID"
+    };
+    image_desc_t im;
+    int failed = 0;
+
+    rrd_graph_init(&im, IMAGE_INIT_NO_CAIRO);
+    rrd_clear_error();
+    rrd_graph_script(1, args, &im, 0);
+    TEST_CHECK_SOFT(rrd_test_error() &&
+               strcmp(rrd_get_error(), "Bad debug value: bad%literal") == 0,
+               "DEF retry error: '%s'\n",
+               rrd_test_error() ? rrd_get_error() : "");
+    im_free(&im);
+    return failed;
+}
+
 static int test_empty_percentiles(void)
 {
     image_desc_t im = {0};
@@ -167,6 +194,7 @@ int main(void)
         test_invalid_ranges() | test_empty_percentiles();
     if (sizeof(time_t) > sizeof(int))
         result |= test_cdef_overflow(0, (time_t) ((uintmax_t) INT_MAX + 1));
+    result |= test_def_retry_error();
     /* Allocation-bound cases require a representable end timestamp. */
     if (sizeof(time_t) >= sizeof(size_t)) {
         result |= test_cdef_overflow(0, (time_t) ((size_t) -1 / sizeof(rrd_value_t) + 1));
