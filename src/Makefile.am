@@ -78,7 +78,7 @@ noinst_HEADERS = \
 	rrd_config_bottom.h rrd_i18n.h \
 	rrd_format.h rrd_tool.h rrd_xport.h optparse.h rrd.h rrd_rpncalc.h \
 	rrd_hw.h rrd_hw_math.h rrd_hw_update.h \
-	rrd_restore.h rrd_create.h \
+	rrd_restore.h rrd_create.h rrd_validate.h \
 	fnv.h rrd_graph.h \
 	rrd_is_thread_safe.h \
 	rrd_modify.h rrd_update.h rrd_config.h \
@@ -147,7 +147,7 @@ rrdcgi_LDADD	= librrd.la librrdupd.la
 rrdupdate_SOURCES = rrdupdate.c
 rrdupdate_LDADD	  = librrdupd.la
 
-rrdtool_SOURCES = rrd_tool.c
+rrdtool_SOURCES = rrd_tool.c rrd_cli_json.c rrd_cli_verify.c rrd_cli.h
 rrdtool_DEPENDENCIES = librrd.la
 rrdtool_LDADD	= librrd.la
 

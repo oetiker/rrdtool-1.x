@@ -952,6 +952,15 @@ static int _rrd_updatex(
     if (rrd_file == NULL) {
         goto err_free;
     }
+    /* Released rrdtool tune --step could leave more unknown seconds than
+     * a step.  Any such count already marks the whole PDP unknown, so
+     * clamping it keeps the result and keeps the arithmetic in range. */
+    for (unsigned long i = 0; i < rrd.stat_head->ds_cnt; i++) {
+        if (rrd.pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt >
+            rrd.stat_head->pdp_step)
+            rrd.pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt =
+                rrd.stat_head->pdp_step;
+    }
     /* We are now at the beginning of the rra's */
     rra_begin = rrd_file->header_len;
 
@@ -1482,6 +1491,13 @@ static int get_time_from_reading(
             tmp = (double)tmp_time.tv_sec + (double)tmp_time.tv_usec * 1e-6f + tmp;
         }
 
+        /* The upper bound is exclusive: converting TIME_MAX to double can
+         * round it up to the first unrepresentable time_t value. */
+        if (!isfinite(tmp) || tmp < 0 ||
+            tmp >= ldexp(1.0, sizeof(time_t) * CHAR_BIT - 1)) {
+            rrd_set_error("update time is out of range");
+            return -1;
+        }
         *current_time = floor(tmp);
         *current_time_usec = (long) ((tmp - (double) *current_time) * 1e6f);
     }
@@ -1742,7 +1758,7 @@ static void simple_update(
                should have thought of it when going subsecond resolution ...
                sorry next format change we will have it! */
             rrd->pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt +=
-                floor(interval);
+                (unsigned long) floor(interval);
         } else {
             if (isnan(rrd->pdp_prep[i].scratch[PDP_val].u_val)) {
                 rrd->pdp_prep[i].scratch[PDP_val].u_val = pdp_new[i];

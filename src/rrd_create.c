@@ -21,6 +21,7 @@
 
 #include "rrd_strtod.h"
 #include "rrd_tool.h"
+#include "rrd_validate.h"
 #include "fnv.h"
 
 #include "rrd_rpncalc.h"
@@ -1359,6 +1360,10 @@ int write_rrd(
     int       rc = -1;
     char     *tmpfilename = NULL;
 
+    /* Do not write a file that rrd_open() would refuse to read. */
+    if (rrd_validate_header(out, outfilename) != 0)
+        return -1;
+
     /* write out the new file */
 #ifdef HAVE_LIBRADOS
     if (strncmp("ceph//", outfilename, 6) == 0) {
@@ -2143,12 +2148,19 @@ static void prefill_pdp_prep(
                  * I really hope that I got the semantics right here - PSt.
                  */
 
-                if (rrd->pdp_prep[ds_index].scratch[PDP_unkn_sec_cnt].u_val >
-                    rrd->stat_head->pdp_step) {
+                /* PDP_unkn_sec_cnt is an integer (u_cnt); reading it as
+                 * u_val reinterprets the bits as a tiny double and the
+                 * clamp never fires, leaving a count above the new step. */
+                unsigned long unkn_sec =
+                    rrd->pdp_prep[ds_index].scratch[PDP_unkn_sec_cnt].u_cnt;
+
+                /* rrd_open accepts a count above the source step, which
+                 * released tune --step wrote; such a PDP is all unknown. */
+                if (unkn_sec > srrd->stat_head->pdp_step)
+                    unkn_sec = srrd->stat_head->pdp_step;
+                if (unkn_sec > rrd->stat_head->pdp_step) {
                     long      source_known =
-                        srrd->stat_head->pdp_step -
-                        rrd->pdp_prep[ds_index].scratch[PDP_unkn_sec_cnt].
-                        u_val;
+                        (long) (srrd->stat_head->pdp_step - unkn_sec);
                     long      max_target_known =
                         rrd->live_head->last_up - current_pdp_begin_time;
 

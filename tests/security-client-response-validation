@@ -1,0 +1,265 @@
+#!/bin/bash
+
+. "$(dirname "$0")/functions"
+
+[ -n "$RRDCACHED_ADDRESS" ] && exit 77
+[ -n "$MSYSTEM" ] && exit 77
+command -v python3 >/dev/null 2>&1 || exit 77
+
+make_sock_dir
+SOCK="$RRDTEST_SOCKDIR/client-response.sock"
+trap remove_sock_dir EXIT
+CLIENT_PROBE="$TOP_BUILDDIR/tests/rrd-client-api"
+[ -x "$CLIENT_PROBE" ] || exit 77
+
+python3 - "$TOP_BUILDDIR/src/rrdtool" "$CLIENT_PROBE" "$SOCK" <<'PYEOF'
+import os
+import socket
+import subprocess
+import sys
+import threading
+
+rrdtool, client_probe, sockpath = sys.argv[1:]
+
+
+def exchange(response, command, expected_request=b"FETCH "):
+    try:
+        os.unlink(sockpath)
+    except FileNotFoundError:
+        pass
+
+    listener = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    listener.settimeout(5)
+    listener.bind(sockpath)
+    listener.listen(1)
+    server_errors = []
+
+    def serve():
+        try:
+            conn, _ = listener.accept()
+            with conn:
+                conn.settimeout(5)
+                request = b""
+                while b"\n" not in request:
+                    chunk = conn.recv(4096)
+                    if not chunk:
+                        raise RuntimeError(
+                            "client closed before sending a request"
+                        )
+                    request += chunk
+                if not request.startswith(expected_request):
+                    raise RuntimeError("unexpected request: %r" % request)
+                conn.sendall(response)
+        except Exception as error:
+            server_errors.append(error)
+
+    thread = threading.Thread(target=serve)
+    thread.start()
+    env = os.environ.copy()
+    env.pop("RRDCACHED_ADDRESS", None)
+    env.pop("RRDCACHED_STRIPPATH", None)
+    try:
+        result = subprocess.run(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=5,
+            env=env,
+            check=False,
+        )
+    except subprocess.TimeoutExpired as error:
+        raise AssertionError(
+            "client did not reject a truncated response"
+        ) from error
+    finally:
+        thread.join(6)
+        listener.close()
+        try:
+            os.unlink(sockpath)
+        except FileNotFoundError:
+            pass
+
+    if thread.is_alive():
+        raise AssertionError("fake daemon did not finish")
+    if server_errors:
+        raise server_errors[0]
+    diagnostics = result.stdout + result.stderr
+    forbidden = (
+        b"AddressSanitizer",
+        b"LeakSanitizer",
+        b"UndefinedBehaviorSanitizer",
+        b"runtime error:",
+    )
+    terminated = result.returncode < 0 or any(
+        marker in diagnostics for marker in forbidden
+    )
+    if terminated:
+        raise AssertionError("client terminated abnormally: %r" % diagnostics)
+    return result
+
+
+def fetch(response):
+    command = [
+        rrdtool,
+        "fetch",
+        "--daemon",
+        "unix:" + sockpath,
+        "--start",
+        "1000000000",
+        "--end",
+        "1000000060",
+        "client-response.rrd",
+        "AVERAGE",
+    ]
+    return exchange(response, command)
+
+
+valid = b"""7 fetch response
+FlushVersion: 1
+Start: 1000000000
+End: 1000000060
+Step: 60
+DSCount: 1
+DSName: value
+1000000060: 42
+"""
+
+result = fetch(valid)
+assert result.returncode == 0, result.stderr
+assert b"value" in result.stdout, result.stdout
+assert b"1000000060" in result.stdout, result.stdout
+
+padded_timestamp = b"""7 fetch response
+FlushVersion: 1
+Start: 900000000
+End: 900000060
+Step: 60
+DSCount: 1
+DSName: value
+ 900000060: 42
+"""
+result = fetch(padded_timestamp)
+assert result.returncode == 0, result.stderr
+
+invalid = [
+    b"7 incomplete",
+    b"268435456 truncated\n",
+    b"7 " + b"x" * 4093 + b"\n",
+    valid.replace(b"7 fetch response", b"7 fetch\x00response", 1),
+    valid.replace(b"7 fetch response", b"\x0b7 fetch response", 1),
+    b"5 short\nFlushVersion: 1\nStart: 1000000000\n"
+    b"End: 1000000060\nStep: 60\nDSCount: 1\n",
+    valid.replace(b"7 fetch response", b"7x fetch response", 1),
+    valid.replace(b"FlushVersion: 1", b"FlushVersion 1", 1),
+    valid.replace(b"FlushVersion: 1", b"FlushVersion: 2", 1),
+    valid.replace(b"End: 1000000060", b"End: 1000000000", 1),
+    valid.replace(b"Start: 1000000000", b"Start: \x0b1000000000", 1),
+    valid.replace(b"Step: 60", b"Step: -1", 1),
+    valid.replace(b"Step: 60", b"Step: \x0b60", 1),
+    valid.replace(b"Step: 60", b"Step: 60x", 1),
+    valid.replace(b"DSCount: 1", b"DSCount: 2305843009213693952", 1),
+    valid.replace(b"DSName: value", b"DSName: value extra", 1),
+    valid.replace(b"1000000060: 42", b"1000000060: 42 43", 1),
+    valid.replace(b"1000000060: 42", b"1000000060x: 42", 1),
+    valid.replace(b"1000000060: 42", b"1000000059: 42", 1),
+    valid.replace(
+        b"Start: 1000000000\nEnd: 1000000060\nStep: 60",
+        b"Start: -9223372036854775808\nEnd: 9223372036854775807\nStep: 1",
+        1,
+    ),
+    b"""7 fetch response
+FlushVersion: 1
+Start: 0
+End: 2305843009213693953
+Step: 1
+DSCount: 8
+DSName: a b c d e f g h
+1: 1 2 3 4 5 6 7 8
+""",
+]
+
+for response in invalid:
+    result = fetch(response)
+    assert result.returncode != 0, result.stdout
+
+queued = b"""6 fetch response
+FlushVersion: 1
+Start: 1000000000
+End: 1000000060
+Step: 60
+DSCount: 1
+DSName: value
+1000000060: 42
+"""
+result = exchange(
+    queued,
+    [
+        client_probe,
+        "fetch-failure",
+        "unix:" + sockpath,
+        "client-response.rrd",
+    ],
+)
+assert result.returncode == 0, result.stderr
+
+failure_checks = [
+    ("last-failure", b"last ", b"0 invalid\nqueued\n"),
+    ("last-failure", b"last ", b"1 1000000000\nignored\nqueued\n"),
+    ("first-failure", b"first ", b"0 invalid\nqueued\n"),
+    ("first-failure", b"first ", b"1 1000000000\nignored\nqueued\n"),
+    (
+        "lastupdate-failure",
+        b"lastupdate ",
+        b"1 invalid LastUpdate values follow\nvalue 42\nqueued\n",
+    ),
+    (
+        "lastupdate-failure",
+        b"lastupdate ",
+        b"1 1000000000 LastUpdate values follow\nmalformed\nqueued\n",
+    ),
+    (
+        "lastupdate-failure",
+        b"lastupdate ",
+        b"0 1000000000 LastUpdate values follow\nqueued\n",
+    ),
+    (
+        "stats-failure",
+        b"STATS\n",
+        b"1 Statistics follow\nUnknown: 1\nqueued\n",
+    ),
+    (
+        "stats-failure",
+        b"STATS\n",
+        b"2 Statistics follow\nQueueLength: 1\n"
+        b"UpdatesWritten: 18446744073709551616\nqueued\n",
+    ),
+    (
+        "info-failure",
+        b"info ",
+        b"1 Info follows\nmalformed\nqueued\n",
+    ),
+    (
+        "info-failure",
+        b"info ",
+        b"1 Info follows\nvalue 1 18446744073709551616\nqueued\n",
+    ),
+    (
+        "info-failure",
+        b"info ",
+        b"1 Info follows\nvalue 3 2147483648\nqueued\n",
+    ),
+]
+for mode, request_prefix, response in failure_checks:
+    result = exchange(
+        response,
+        [client_probe, mode, "unix:" + sockpath, "client-response.rrd"],
+        request_prefix,
+    )
+    assert result.returncode == 0, result.stderr
+
+print("daemon responses are validated and rejected without hangs or crashes")
+PYEOF
+STATUS=$?
+
+test "$STATUS" -eq 0
+report "validate daemon responses and preserve failure handling"

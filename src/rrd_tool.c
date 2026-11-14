@@ -18,6 +18,7 @@
 #include "rrd_xport.h"
 #include "rrd_i18n.h"
 #include "rrd_client.h"
+#include "rrd_cli.h"
 
 #include <locale.h>
 
@@ -51,20 +52,20 @@ static void PrintUsage(
         N_("RRDtool %s"
            "  Copyright by Tobias Oetiker <tobi@oetiker.ch>\n"
            "               Compiled %s\n\n"
-           "Usage: rrdtool [options] command command_options\n");
+           "Usage: rrdtool [--json] [options] command command_options\n");
 #else
     const char *help_main =
         N_("RRDtool %s"
            "  Copyright by Tobias Oetiker <tobi@oetiker.ch>\n"
            "               Compiled %s %s\n\n"
-           "Usage: rrdtool [options] command command_options\n");
+           "Usage: rrdtool [--json] [options] command command_options\n");
 #endif
 
     const char *help_list =
         N_
         ("Valid commands: create, update, updatev, graph, graphv,  dump, restore,\n"
          "\t\tlast, lastupdate, first, info, list, fetch, tune,\n"
-         "\t\tresize, xport, flushcached\n");
+         "\t\tresize, xport, flushcached, verify\n");
 
     const char *help_listremote =
         N_("Valid remote commands: quit, ls, cd, mkdir, pwd\n");
@@ -90,6 +91,10 @@ static void PrintUsage(
     const char *help_info =
         N_("* info - returns the configuration and status of the RRD\n\n"
            "\trrdtool info [--daemon|-d <addr> [--noflush|-F]] filename.rrd\n");
+
+    const char *help_verify =
+        N_("* verify - check an RRD without modifying it\n\n"
+           "\trrdtool verify [--json] [--diagnose-unknown] filename.rrd\n");
 
     const char *help_listrrds =
         N_("* list - returns the list of RRDs\n\n"
@@ -272,7 +277,7 @@ static void PrintUsage(
         C_LASTUPDATE, C_FIRST, C_UPDATE, C_FETCH, C_GRAPH, C_GRAPHV,
         C_TUNE,
         C_RESIZE, C_XPORT, C_QUIT, C_LS, C_CD, C_MKDIR, C_PWD,
-        C_UPDATEV, C_FLUSHCACHED
+        C_UPDATEV, C_FLUSHCACHED, C_VERIFY
     };
     int       help_cmd = C_NONE;
 
@@ -283,6 +288,8 @@ static void PrintUsage(
             help_cmd = C_DUMP;
         else if (!strcmp(cmd, "info"))
             help_cmd = C_INFO;
+        else if (!strcmp(cmd, "verify"))
+            help_cmd = C_VERIFY;
         else if (!strcmp(cmd, "list"))
             help_cmd = C_LIST;
         else if (!strcmp(cmd, "restore"))
@@ -343,6 +350,9 @@ static void PrintUsage(
         break;
     case C_INFO:
         puts(_(help_info));
+        break;
+    case C_VERIFY:
+        puts(_(help_verify));
         break;
     case C_LIST:
         puts(_(help_listrrds));
@@ -591,11 +601,34 @@ static int HandleInputLine(
     const char **argv,
     FILE * out)
 {
+    int json = 0;
 #if defined(HAVE_OPENDIR) && defined (HAVE_READDIR)
     DIR      *curdir;   /* to read current dir with ls */
     struct dirent *dent;
 #endif
 
+    /* Consume only the global option or the first command option. Do not
+     * mistake an option's value (for example a graph title) for a flag. */
+    if (argc > 1 && strcmp(argv[1], "--json") == 0) {
+        memmove(argv + 1, argv + 2, (argc - 2) * sizeof(*argv));
+        argv[--argc] = NULL;
+        json = 1;
+    } else if (argc > 2 && strcmp(argv[2], "--json") == 0 &&
+               strcmp(argv[1], "xport") != 0) {
+        memmove(argv + 2, argv + 3, (argc - 3) * sizeof(*argv));
+        argv[--argc] = NULL;
+        json = 1;
+    }
+    if (argc > 1 && (strcmp(argv[1], "verify") == 0 || json)) {
+        int result = strcmp(argv[1], "verify") == 0 ?
+            rrd_cli_verify(argc - 1, argv + 1, json) :
+            rrd_cli_json(argc - 1, argv + 1);
+
+        /* Pipe clients wait for a protocol status after every command. */
+        if (RemoteMode && result != 0)
+            fprintf(out, "ERROR: command failed\n");
+        return result;
+    }
     /* Reset errno to 0 before we start.
      */
     if (RemoteMode) {
