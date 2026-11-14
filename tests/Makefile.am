@@ -17,6 +17,7 @@ script_tests += verify-json
 script_tests += validate-agreement
 script_tests += security-time-fields compat-released-tune
 script_tests += security-client-response-validation
+script_tests += resize-overflow
 
 EXTRA_DIST = test_cli_verify_json.py test_validate_agreement.py
 

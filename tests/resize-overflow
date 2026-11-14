@@ -1,0 +1,36 @@
+#!/bin/bash
+
+# resize sizes the new file from the grown row count; a count whose value
+# bytes, or whose header plus value bytes, overflow size_t must be refused
+# before anything is written.
+
+. "$(dirname "$0")/functions"
+
+[ -n "$RRDCACHED_ADDRESS" ] && exit 77
+[ -n "$MSYSTEM" ] && exit 77 # getconf describes MSYS, not the MinGW binary.
+test "$(getconf LONG_BIT)" = 64 || exit 77
+
+# resize always writes resize.rrd in the current directory
+DIR="$BUILDDIR/$(basename "$0").d"
+rm -rf "$DIR"
+mkdir "$DIR" && cd "$DIR" || fail $? "enter $DIR"
+
+$RRDTOOL create in.rrd --start 1000000000 --step 60 \
+  DS:a:GAUGE:120:U:U RRA:AVERAGE:0.5:1:10
+report create
+
+$RRDTOOL resize in.rrd 0 GROW 5 && [ -f resize.rrd ]
+report "grow by 5 rows"
+rm -f resize.rrd
+
+# one DS of 8 byte values: 2^61 rows overflow the value bytes, 2^61 - 1
+# rows overflow only once the header is added
+for rows in 2305843009213693942 2305843009213693941; do
+  if $RRDTOOL resize in.rrd 0 GROW "$rows" >resize.out 2>&1; then
+    fail 1 "grow by $rows rows was accepted"
+  fi
+  [ ! -e resize.rrd ] || fail 1 "grow by $rows rows wrote resize.rrd"
+  ok "refuse to grow by $rows rows"
+done
+
+cd "$BUILDDIR" && rm -rf "$DIR"
