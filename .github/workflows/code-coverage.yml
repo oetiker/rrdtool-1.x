@@ -150,7 +150,17 @@ jobs:
           fuzz/rrd_open_fuzzer \
           -object fuzz/rrd_restore_fuzzer \
           >fuzz-coverage-full.info
-        sed '/^BRDA:/d; /^BRF:/d; /^BRH:/d' fuzz-coverage-full.info > fuzz-coverage.info
+        # llvm-cov counts every line inside a code region, including
+        # declarations and the continuation lines of a call, which gcov does
+        # not count. Uploading those as misses would mark lines that the
+        # GCC report has no data for as uncovered. Upload only the lines the
+        # fuzzers reached; the full report stays in the artifact below.
+        awk -F'[:,]' '
+          /^(BRDA|BRF|BRH|LF|LH):/ { next }
+          /^DA:/ { if ($3 == 0) next; hit++ }
+          /^end_of_record/ { print "LF:" hit + 0; print "LH:" hit + 0; hit = 0 }
+          { print }
+        ' fuzz-coverage-full.info > fuzz-coverage.info
 
     - name: Preserve full fuzz line and branch coverage
       uses: actions/upload-artifact@v7
