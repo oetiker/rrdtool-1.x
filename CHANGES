@@ -23,6 +23,14 @@ Bugfixes
 * On MSYS2, `make check` failed the tests graph-export-open and
   graph-lazy with "ERROR: opening '/d/a/.../tests/graph-lazy.rrd': The
   system cannot find the path specified." @oetiker
+* `rrdtool create` accepted `nan` for the xff, `alpha`, `beta`, `gamma`
+  and `smoothing-window=` of an RRA. A smoothing window outside 0 to 1,
+  which `restore` accepts, made `update` read past the SEASONAL RRA;
+  update now fails with "smoothing window ... is not between 0 and 1".
+  Running out of memory while smoothing no longer leads to a
+  use-after-free. @somethingwithproof
+* A Holt-Winters RRA with a seasonal period of 1 crashed `update` as soon
+  as an update skipped more than two steps. @somethingwithproof
 * The release tarball did not contain the tests of the Python binding
   (`bindings/python/tests`), so they could not be run from it. They are
   included now. @oetiker
@@ -35,14 +43,6 @@ Bugfixes
   change nothing. The new `RRA#<index>:alpha=<value>` form (also `beta`,
   `gamma`, `smoothing-window`, `deltapos`, `deltaneg`, `failure-threshold`,
   `window-length`) tunes exactly one RRA. @oetiker
-* `rrdtool create` accepted `nan` for the xff, `alpha`, `beta`, `gamma`
-  and `smoothing-window=` of an RRA. A smoothing window outside 0 to 1,
-  which `restore` accepts, made `update` read past the SEASONAL RRA;
-  update now fails with "smoothing window ... is not between 0 and 1".
-  Running out of memory while smoothing no longer leads to a
-  use-after-free. @somethingwithproof
-* A Holt-Winters RRA with a seasonal period of 1 crashed `update` as soon
-  as an update skipped more than two steps. @somethingwithproof
 * A program that included only the installed `rrd_client.h` did not
   compile, with errors such as "unknown type name 'rrd_info_t'" and
   "unknown type name 'time_t'"; it first had to include `rrd.h`. The
