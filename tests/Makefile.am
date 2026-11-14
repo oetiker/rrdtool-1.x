@@ -13,7 +13,6 @@ TESTS = $(script_tests) compat-cloexec rrd-open-security tune-legacy-version tun
 	client-header-standalone tune-legacy-aberrant
 
 script_tests += security-rrdcached-response-bounds
-script_tests += security-error-format
 
 EXTRA_DIST = Makefile.am \
 	functions $(script_tests) \
@@ -52,6 +51,9 @@ check_PROGRAMS = \
 	tune-daemon-error \
 	tune-legacy-aberrant \
 	client-header-standalone
+
+script_tests += security-error-format
+CLEANFILES += security-error-format-cached.log
 
 # compile-only: includes nothing but the installed rrd_client.h
 client_header_standalone_SOURCES = test_client_header_standalone.c
@@ -165,5 +167,4 @@ graph_security_LDADD = ${top_builddir}/src/librrd.la
 
 script_tests += security-tune-failures-window security-dump-failures-window
 CLEANFILES += first-last-error.out
-CLEANFILES += security-error-format-cached.log
 CLEANFILES += graph-incomplete-file.err cached/graph-incomplete-file.err

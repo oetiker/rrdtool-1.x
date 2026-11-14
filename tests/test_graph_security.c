@@ -141,26 +141,6 @@ static int test_invalid_ranges(void)
     return 0;
 }
 
-static int test_empty_percentiles(void)
-{
-    image_desc_t im = {0};
-    graph_desc_t gdes[2] = {{0}};
-    rrd_value_t value = NAN;
-    im.gdes = gdes;
-    im.gdes_c = 2;
-    gdes[0].step = 1;
-    gdes[0].ds_cnt = 1;
-    gdes[0].data = &value;
-    for (int mode = 0; mode < 2; mode++) {
-        gdes[0].end = mode;
-        gdes[1].vf.op = mode ? VDEF_PERCENTNAN : VDEF_PERCENT;
-        rrd_clear_error();
-        if (vdef_calc(&im, 1) != 0 || !isnan(gdes[1].vf.val))
-            return 1;
-    }
-    return 0;
-}
-
 /* Record a failure, print the diagnostic and keep going; a single line so
  * no failure-only statement is left over. */
 #define TEST_CHECK_SOFT(c, ...) \
@@ -188,12 +168,33 @@ static int test_def_retry_error(void)
     return failed;
 }
 
+static int test_empty_percentiles(void)
+{
+    image_desc_t im = {0};
+    graph_desc_t gdes[2] = {{0}};
+    rrd_value_t value = NAN;
+    im.gdes = gdes;
+    im.gdes_c = 2;
+    gdes[0].step = 1;
+    gdes[0].ds_cnt = 1;
+    gdes[0].data = &value;
+    for (int mode = 0; mode < 2; mode++) {
+        gdes[0].end = mode;
+        gdes[1].vf.op = mode ? VDEF_PERCENTNAN : VDEF_PERCENT;
+        rrd_clear_error();
+        if (vdef_calc(&im, 1) != 0 || !isnan(gdes[1].vf.val))
+            return 1;
+    }
+    return 0;
+}
+
 int main(void)
 {
     int result = test_percentiles(0) | test_percentiles(-4) | test_percentiles(-2) |
-        test_invalid_ranges() | test_empty_percentiles() | test_def_retry_error();
+        test_invalid_ranges() | test_empty_percentiles();
     if (sizeof(time_t) > sizeof(int))
         result |= test_cdef_overflow(0, (time_t) ((uintmax_t) INT_MAX + 1));
+    result |= test_def_retry_error();
     /* Allocation-bound cases require a representable end timestamp. */
     if (sizeof(time_t) >= sizeof(size_t)) {
         result |= test_cdef_overflow(0, (time_t) ((size_t) -1 / sizeof(rrd_value_t) + 1));
