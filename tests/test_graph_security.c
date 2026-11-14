@@ -163,6 +163,15 @@ static int test_empty_percentiles(void)
     return 0;
 }
 
+/* Record a failure, print the diagnostic and leave through the shared
+ * cleanup label; a single line so no failure-only statement is left over. */
+#define TEST_CHECK(c, ...) \
+    do { if (!(c)) { fprintf(stderr, __VA_ARGS__); goto done; } } while (0)
+
+/* Same, but keep going so the caller can still release resources. */
+#define TEST_CHECK_SOFT(c, ...) \
+    do { if (!(c)) { fprintf(stderr, __VA_ARGS__); failed = 1; } } while (0)
+
 static int test_repeated_fetch(unsigned long step)
 {
     const char *create_args[] = {
@@ -171,35 +180,30 @@ static int test_repeated_fetch(unsigned long step)
     };
     const char *update_args[] = { "1000000060:1:2", "1000000120:3:4" };
     const char *builddir = getenv("BUILDDIR");
-    char path[1024];
+    char path[1024] = "";
     image_desc_t im;
     rrd_value_t *data[2];
     char **names[2];
     int owners[2];
-    int fd, length, result = 1;
+    int fd = -1, length, result = 1;
     unsigned int i;
 
+    rrd_graph_init(&im, IMAGE_INIT_NO_CAIRO);
     length = snprintf(path, sizeof(path), "%s/graph-fetch-XXXXXX",
                       builddir ? builddir : ".");
-    if (length < 0 || (size_t) length >= sizeof(path))
-        return 1;
+    TEST_CHECK(length >= 0 && (size_t) length < sizeof(path),
+               "fetch fixture path too long\n");
     fd = mkstemp(path);
-    if (fd < 0)
-        return 1;
+    TEST_CHECK(fd >= 0, "could not create fetch fixture file\n");
     close(fd);
     rrd_clear_error();
-    if (rrd_create_r(path, 60, 1000000000, 3, create_args) != 0 ||
-        rrd_update_r(path, NULL, 2, update_args) != 0) {
-        fprintf(stderr, "could not create fetch fixture: %s\n", rrd_get_error());
-        remove(path);
-        return 1;
-    }
+    TEST_CHECK(rrd_create_r(path, 60, 1000000000, 3, create_args) == 0 &&
+               rrd_update_r(path, NULL, 2, update_args) == 0,
+               "could not create fetch fixture: %s\n", rrd_get_error());
 
-    rrd_graph_init(&im, IMAGE_INIT_NO_CAIRO);
     im.step = step;
     im.gdes = calloc(2, sizeof(*im.gdes));
-    if (im.gdes == NULL)
-        goto done;
+    TEST_CHECK(im.gdes != NULL, "could not allocate DEFs\n");
     im.gdes_c = 2;
     for (i = 0; i < 2; i++) {
         graph_desc_t *def = &im.gdes[i];
@@ -213,30 +217,28 @@ static int test_repeated_fetch(unsigned long step)
         def->end = def->end_orig = 1000000120;
         def->step = def->step_orig = step;
     }
-    if (data_fetch(&im) != 0)
-        goto done;
+    TEST_CHECK(data_fetch(&im) == 0, "fetch failed: %s\n", rrd_get_error());
     for (i = 0; i < 2; i++) {
         data[i] = im.gdes[i].data;
         names[i] = im.gdes[i].ds_namv;
         owners[i] = im.gdes[i].data_first;
-        if (im.gdes[i].ds != (int) i || im.gdes[i].ds_cnt != 2)
-            goto done;
+        TEST_CHECK(im.gdes[i].ds == (int) i && im.gdes[i].ds_cnt == 2,
+                   "DEF %u has the wrong data source\n", i);
     }
     /* Exercise both independently fetched and shared buffers, followed
      * by the second pass used by graphv --add-jsontime. */
-    if (data_fetch(&im) != 0)
-        goto done;
+    TEST_CHECK(data_fetch(&im) == 0, "second fetch failed: %s\n",
+               rrd_get_error());
     for (i = 0; i < 2; i++) {
-        if (im.gdes[i].data != data[i] || im.gdes[i].ds_namv != names[i] ||
-            im.gdes[i].data_first != owners[i]) {
-            fprintf(stderr, "repeated fetch changed DEF %u ownership\n", i);
-            goto done;
-        }
+        TEST_CHECK(im.gdes[i].data == data[i] && im.gdes[i].ds_namv == names[i] &&
+                   im.gdes[i].data_first == owners[i],
+                   "repeated fetch changed DEF %u ownership\n", i);
     }
     result = 0;
 done:
     im_free(&im);
-    remove(path);
+    if (path[0] != '\0' && fd >= 0)
+        remove(path);
     return result;
 }
 
@@ -245,20 +247,22 @@ static int test_title_cleanup(void)
     const char *titles[] = {"", "\nleading\n\nsecond", "one<br>two\\nthree\nfour"};
     const int counts[] = {1, 2, 3};
     const char *first[] = {"", "leading", "one"};
+    int failed = 0;
     size_t i;
 
     for (i = 0; i < sizeof(titles) / sizeof(titles[0]); i++) {
         image_title_t title = graph_title_split(titles[i]);
 
-        if (title.lines == NULL || title.buf == NULL ||
-            title.count != counts[i] || strcmp(title.lines[0], first[i]) != 0)
-            return 1;
+        TEST_CHECK_SOFT(title.lines != NULL && title.buf != NULL &&
+                        title.count == counts[i] &&
+                        strcmp(title.lines[0], first[i]) == 0,
+                        "title %zu was split incorrectly\n", i);
         graph_title_free(&title);
-        if (title.lines != NULL || title.buf != NULL)
-            return 1;
+        TEST_CHECK_SOFT(title.lines == NULL && title.buf == NULL,
+                        "title %zu was not cleared\n", i);
         graph_title_free(&title);
     }
-    return 0;
+    return failed;
 }
 
 int main(void)
