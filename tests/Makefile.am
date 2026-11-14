@@ -13,7 +13,6 @@ TESTS = $(script_tests) compat-cloexec rrd-open-security tune-legacy-version tun
 	client-header-standalone tune-legacy-aberrant
 
 script_tests += security-rrdcached-response-bounds
-script_tests += security-daemon-tune-argc
 
 EXTRA_DIST = Makefile.am \
 	functions $(script_tests) \
@@ -43,6 +42,9 @@ CLEANFILES = *.rrd info-cached1.xml \
 	modify5-testa1-mod.dump modify5-testa2-mod.dump \
 	modify5-testa1-mod.dump.tmp modify5-testa2-mod.dump.tmp \
 	rpn1.out rpn1.output.out create-with-source-5-test.png
+
+script_tests += security-daemon-tune-argc
+CLEANFILES += security-daemon-tune-argc-cached.log
 
 check_PROGRAMS = \
 	compat-cloexec \
@@ -138,8 +140,7 @@ EXTRA_DIST += security-restore-malformed-row.xml
 
 CLEANFILES += security-header-counts.out
 CLEANFILES += cached/*.rrd modify6-testbefore.dump modify6-testafter.dump \
-	security-*.out security-fetch-daemon-arithmetic-cached.log \
-	security-daemon-tune-argc-cached.log
+	security-*.out security-fetch-daemon-arithmetic-cached.log
 CLEANFILES += modify6-testafter2.dump \
 	graph-cairo-error.out graph-cairo-error.err graph-cairo-error.probe \
 	graph-cairo-error.png graph-cairo-error.pdf graph-cairo-error.eps
