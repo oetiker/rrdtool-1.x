@@ -15,6 +15,7 @@
 /daemon-fetch-security
 /tune-legacy-version
 /tune-daemon-error
+/numeric-limits
 /tune-legacy-aberrant
 /client-header-standalone
 /rrd-client-api
