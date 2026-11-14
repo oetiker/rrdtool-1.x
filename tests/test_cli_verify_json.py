@@ -121,9 +121,10 @@ class CliTests(unittest.TestCase):
         self.assertTrue(any(None in row["values"] for row in data["data"]))
         self.assertEqual(json.loads(self.run_cli("info", "--json", "data.rrd")), info)
         self.assertIsInstance(self.output("updatev", "data.rrd", "1000000240:48:12"), dict)
+        self.run_cli("create", "second.rrd", "--start", "1000000000",
+                     "DS:a:GAUGE:120:U:U", "RRA:AVERAGE:0.5:1:8")
         listing = self.output("list", ".")["listing"]
-        self.assertIn("data.rrd", listing)
-        self.assertNotIn("", listing)
+        self.assertEqual(sorted(listing), ["data.rrd", "second.rrd"])
 
     def test_raw_counter_and_unknown(self):
         self.run_cli("create", "counter.rrd", "--start", "1000000000", "--step", "60",

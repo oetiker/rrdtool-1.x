@@ -35,9 +35,18 @@ status=$?
   fail 1 "verify did not report the unknown seconds: $(cat "${BUILD}.out")"
 ok "verify reports the unknown seconds"
 
+# create --source copies that pdp_prep; the count it carries over must be
+# clamped to the source step before it is fitted to the new step.
+$RRDTOOL create "${BUILD}-new.rrd" --source "${BUILD}.rrd" --step 30 \
+  DS:x:GAUGE:100:U:U RRA:AVERAGE:0.5:1:10
+report "create --source from a file from released tune --step"
+$RRDTOOL verify "${BUILD}-new.rrd" >"${BUILD}.out" 2>&1 || \
+  fail 1 "create --source kept the excess unknown seconds: $(cat "${BUILD}.out")"
+ok "create --source keeps the unknown seconds within the new step"
+
 $RRDTOOL update "${BUILD}.rrd" 1000000300:3 1000000360:4
 report "update on a file from released tune --step"
 $RRDTOOL verify "${BUILD}.rrd" >/dev/null
 report "update brings the unknown seconds back within the step"
 
-rm -f "${BUILD}.rrd" "${BUILD}.out"
+rm -f "${BUILD}.rrd" "${BUILD}-new.rrd" "${BUILD}.out"
