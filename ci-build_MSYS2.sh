@@ -3,8 +3,8 @@ set -e
 echo "MSYSTEM:     $MSYSTEM"
 echo "MINGW_CHOST: $MINGW_CHOST"
 ./bootstrap
-./configure --host="$MINGW_CHOST" --disable-static --disable-mmap --disable-tcl --disable-perl --disable-ruby --disable-python --disable-lua --disable-rrdcached --without-libintl-prefix --without-libiconv-prefix
-make CFLAGS='-D__USE_MINGW_ANSI_STDIO=1'
+./configure --host="$MINGW_CHOST" --disable-static --disable-mmap --disable-tcl --disable-perl --disable-ruby --disable-python --disable-lua --disable-rrdcached --without-libintl-prefix --without-libiconv-prefix CFLAGS='-D__USE_MINGW_ANSI_STDIO=1'
+make
 
 # The export of TZ=Europe/Zurich in tests/functions does not work under Windows. The timezone needs to be set
 # for Windows, e.g. using tzutil.exe

@@ -83,7 +83,7 @@ if (($Config{'osname'} eq 'MSWin32' && $ENV{'OSTYPE'} eq '')) {
 	WriteMakefile(
 		'NAME'         => 'RRDs',
 		'VERSION_FROM' => 'RRDs.pm',
-		'DEFINE'       => "-DPERLPATCHLEVEL=$Config{PATCHLEVEL}",
+		'DEFINE'       => "-DPERLPATCHLEVEL=$Config{PATCHLEVEL} -DRRDS_STANDALONE",
 		'INC'          => $cflags,
 		'LIBS'         => [$libs],
 		'realclean'    => {FILES => 't/demo?.rrd t/demo?.png'},

@@ -4,6 +4,7 @@
 
 . $(dirname $0)/functions
 
+require_restore
 is_cached && exit 0
 
 BUILD=$BUILDDIR/info-cached1

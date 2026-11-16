@@ -6,6 +6,7 @@
 
 . $(dirname $0)/functions
 
+require_rrdcached
 if [ -n "$MSYSTEM" ]; then
 	echo "no rrdcached tests on Windows"
 	exit 77

@@ -2,6 +2,7 @@
 
 . $(dirname $0)/functions
 
+require_restore
 BASE=$BASEDIR/$(basename $0)-test
 BUILD=$BUILDDIR/$(basename $0)-test
 STORE=$RRDDIR/$(basename $0)-test

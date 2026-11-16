@@ -103,7 +103,9 @@ if [ -z "$rrd_rb" ]; then
     exit 1
 fi
 install -d %{buildroot}/opt/rrdtool/lib/ruby
-mv "$rrd_rb" %{buildroot}/opt/rrdtool/lib/ruby/RRD.so
+# configure now installs it there itself; older trees did not
+[ "$rrd_rb" = %{buildroot}/opt/rrdtool/lib/ruby/RRD.so ] \
+    || mv "$rrd_rb" %{buildroot}/opt/rrdtool/lib/ruby/RRD.so
 # Drop the now-empty system tree the ruby binding escaped into.
 rm -rf %{buildroot}/usr
 

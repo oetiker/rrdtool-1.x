@@ -24,10 +24,25 @@ extern "C" {
  */
 #define VERSION_SAVED VERSION
 #undef VERSION
+#ifdef RRDS_STANDALONE
+/* Built by Makefile.PL against an installed librrd (pkg-config), without
+ * the source tree: only the installed headers exist. rrd_format.h comes
+ * with RRD_EXPORT_DEPRECATED; rrd_fetch_cb_register is exported by librrd
+ * but only declared in the internal rrd_tool.h. */
+#define RRD_EXPORT_DEPRECATED
+#include <rrd.h>
+#include <rrd_client.h>
+typedef int (*rrd_fetch_cb_t)(const char *filename, enum cf_en cf_idx,
+                              time_t *start, time_t *end,
+                              unsigned long *step, unsigned long *ds_cnt,
+                              char ***ds_namv, rrd_value_t **data);
+int rrd_fetch_cb_register(rrd_fetch_cb_t cb);
+#else
 #ifndef _WIN32
 #include "rrd_config.h"
 #endif
 #include "rrd_tool.h"
+#endif
 #undef VERSION
 #define VERSION VERSION_SAVED
 #undef VERSION_SAVED

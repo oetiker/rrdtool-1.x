@@ -98,3 +98,4 @@ compile_commands.json
 
 # superpowers / GSD working docs (specs, plans, etc.) — local-only
 /docs/superpowers/
+/_check/
