@@ -309,7 +309,8 @@ Bugfixes
   modules by their packlist, the Python module by the installed wheel's
   record), the `rrdcreate` and `rrdinfo` links and the HTML index. It
   leaves other packages in the same directories alone, as well as Perl's
-  shared `perllocal.pod`. @somethingwithproof
+  shared `perllocal.pod`. Existing executables and unrelated symlinks named
+  `rrdcreate` or `rrdinfo` are preserved. @somethingwithproof
 * `make install` fails when the Perl, Ruby or Python binding was built but
   cannot be installed; it used to report success. The Ruby binding is
   installed under `--prefix` (`$prefix/lib/ruby`, below `DESTDIR`) instead

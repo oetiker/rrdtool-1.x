@@ -4,7 +4,7 @@
 # configure options whose effect is only visible in what gets installed.
 #
 # Usage: conftools/check-buildsystem.sh [step...]
-#   steps: distcheck disabled tarball-daemon install options
+#   steps: distcheck disabled tarball-daemon install aliases options
 #          perl-standalone flags lua
 #   (default: all, in that order)
 #
@@ -141,6 +141,25 @@ do_install () {
     echo "install, load and uninstall: ok"
 }
 
+do_aliases () {
+    step "uninstall keeps executables and symlinks owned by other packages"
+    local d="$W/aliases" bin="$W/aliases/bin"
+    mkdir -p "$bin"
+    echo 'existing executable' >"$bin/rrdcreate"
+    ln -s unrelated "$bin/rrdinfo"
+    make -s -C src install-exec-hook DESTDIR= bindir="$bin"
+    make -s -C src uninstall-hook DESTDIR= bindir="$bin"
+    grep -qx 'existing executable' "$bin/rrdcreate" || fail "removed existing rrdcreate"
+    [ "$(readlink "$bin/rrdinfo")" = unrelated ] || fail "removed unrelated rrdinfo link"
+    rm -f "$bin/rrdcreate" "$bin/rrdinfo"
+    make -s -C src install-exec-hook DESTDIR="$d" bindir=/bin
+    [ "$(readlink "$bin/rrdcreate")" = rrdupdate ] || fail "rrdcreate alias missing"
+    [ "$(readlink "$bin/rrdinfo")" = rrdupdate ] || fail "rrdinfo alias missing"
+    make -s -C src uninstall-hook DESTDIR="$d" bindir=/bin
+    [ ! -L "$bin/rrdcreate" ] && [ ! -L "$bin/rrdinfo" ] || fail "aliases left behind"
+    make -s -C src uninstall-hook DESTDIR="$d" bindir=/bin
+}
+
 do_options () {
     step "--htmldir, RRDTXTDIR, --enable-python-site-install, --localedir"
     build "$W/opt" --prefix=/usr --htmldir=/usr/doc/x/html RRDTXTDIR=/usr/doc/x/txt \
@@ -220,13 +239,14 @@ do_lua () {
 }
 
 rm -rf "$W"; mkdir -p "$W"
-steps=${*:-distcheck disabled tarball-daemon install options perl-standalone flags lua}
+steps=${*:-distcheck disabled tarball-daemon install aliases options perl-standalone flags lua}
 for s in $steps; do
     case $s in
         distcheck) do_distcheck ;;
         disabled) do_disabled ;;
         tarball-daemon) do_tarball_daemon ;;
         install) do_install ;;
+        aliases) do_aliases ;;
         options) do_options ;;
         perl-standalone) do_perl_standalone ;;
         flags) do_flags ;;

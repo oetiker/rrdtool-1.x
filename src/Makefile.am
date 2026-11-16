@@ -174,7 +174,12 @@ install-exec-hook:
 	(cd $(DESTDIR)$(bindir) && $(LN_S) rrdupdate rrdcreate && $(LN_S) rrdupdate rrdinfo) || true
 
 uninstall-hook:
-	rm -f $(DESTDIR)$(bindir)/rrdcreate $(DESTDIR)$(bindir)/rrdinfo
+	@for name in rrdcreate rrdinfo; do \
+	  path="$(DESTDIR)$(bindir)/$$name"; \
+	  if test -L "$$path" && test "`readlink "$$path"`" = rrdupdate; then \
+	    rm -f "$$path" || exit $$?; \
+	  fi; \
+	done
 
 distclean-local:
 	-rm -rf rrd_config.h
