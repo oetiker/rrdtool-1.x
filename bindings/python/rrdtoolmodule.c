@@ -726,29 +726,27 @@ _rrdtool_xport(PyObject *Py_UNUSED(self), PyObject *args)
         legend_list = PyList_New(col_cnt);
         data_list = PyList_New(row_cnt);
 
-        PyDict_SetItem(ret, PyRRD_String_FromString("meta"), meta_dict);
-        PyDict_SetItem(ret, PyRRD_String_FromString("data"), data_list);
+        PyDict_SetItemString(ret, "meta", meta_dict);
+        PyDict_SetItemString(ret, "data", data_list);
 
         datai = data;
 
-        PyDict_SetItem(meta_dict,
-            PyRRD_String_FromString("start"),
-            PyRRD_Int_FromLong((long) start));
-        PyDict_SetItem(meta_dict,
-            PyRRD_String_FromString("end"),
-            PyRRD_Int_FromLong((long) end));
-        PyDict_SetItem(meta_dict,
-            PyRRD_String_FromString("step"),
-            PyRRD_Int_FromLong((long) step));
-        PyDict_SetItem(meta_dict,
-            PyRRD_String_FromString("rows"),
-            PyRRD_Int_FromLong((long) row_cnt));
-        PyDict_SetItem(meta_dict,
-            PyRRD_String_FromString("columns"),
-            PyRRD_Int_FromLong((long) col_cnt));
-        PyDict_SetItem(meta_dict,
-            PyRRD_String_FromString("legend"),
-            legend_list);
+        t = PyRRD_Int_FromLong((long) start);
+        PyDict_SetItemString(meta_dict, "start", t);
+        Py_DECREF(t);
+        t = PyRRD_Int_FromLong((long) end);
+        PyDict_SetItemString(meta_dict, "end", t);
+        Py_DECREF(t);
+        t = PyRRD_Int_FromLong((long) step);
+        PyDict_SetItemString(meta_dict, "step", t);
+        Py_DECREF(t);
+        t = PyRRD_Int_FromLong((long) row_cnt);
+        PyDict_SetItemString(meta_dict, "rows", t);
+        Py_DECREF(t);
+        t = PyRRD_Int_FromLong((long) col_cnt);
+        PyDict_SetItemString(meta_dict, "columns", t);
+        Py_DECREF(t);
+        PyDict_SetItemString(meta_dict, "legend", legend_list);
 
         for (i = 0; i < col_cnt; i++)
             PyList_SET_ITEM(legend_list, i, PyRRD_String_FromString(legend_v[i]));
@@ -768,6 +766,10 @@ _rrdtool_xport(PyObject *Py_UNUSED(self), PyObject *args)
                 }
             }
         }
+
+        Py_DECREF(meta_dict);
+        Py_DECREF(data_list);
+        Py_DECREF(legend_list);
 
         for (i = 0; i < col_cnt; i++)
             rrd_freemem(legend_v[i]);

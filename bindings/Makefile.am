@@ -21,7 +21,8 @@ EXTRA_DIST = perl-piped/MANIFEST perl-piped/README perl-piped/Makefile.PL perl-p
 	     dotnet/rrdlib.cs dotnet/rrd_binding_test.cs dotnet/rrdlib.sln dotnet/favicon.ico dotnet/dnrrdlib.csproj dotnet/Properties/AssemblyInfo.cs  dotnet/dnrrd_binding_test.csproj   dotnet/RrdException.cs \
              python/COPYING python/README.md python/rrdtoolmodule.c python/setup.py \
              python/tests/__init__.py python/tests/test_connect_error.py \
-             python/tests/test_fetch_cb.py python/tests/test_lastupdate.py
+             python/tests/test_fetch_cb.py python/tests/test_lastupdate.py \
+             python/tests/test_xport.py
 
 
 # add the following to the all target
