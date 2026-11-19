@@ -3,6 +3,8 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* In the Python binding, `rrdtool.xport()` leaked its whole result on
+  every call. (#1381) @SAY-5
 * `rrdtool tune --alpha nan` stored NaN as alpha and `--deltapos inf`
   stored inf; all Holt-Winters and FAILURES parameters now refuse such
   values with "alpha must be a finite number, not 'nan'". Wherever
