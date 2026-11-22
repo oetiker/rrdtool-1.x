@@ -3953,8 +3953,10 @@ static void journal_init(
     }
     closedir(dir);
 
-    qsort(journal_cur->files, journal_cur->files_num,
-          sizeof(journal_cur->files[0]), journal_sort);
+    /* files is NULL when no journal was found; qsort must not get NULL */
+    if (journal_cur->files_num > 0)
+        qsort(journal_cur->files, journal_cur->files_num,
+              sizeof(journal_cur->files[0]), journal_sort);
 
     for (uint i = 0; i < journal_cur->files_num; i++)
         had_journal += journal_replay(journal_cur->files[i]);

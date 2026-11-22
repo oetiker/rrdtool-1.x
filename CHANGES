@@ -3,6 +3,10 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* A build with `-fsanitize=undefined` aborted `rrdcached -j` on a first
+  start with an empty journal directory: journal_init passed a NULL array
+  to qsort when there was no journal file to sort. Clients then got
+  "Connection refused". @somethingwithproof
 * `rrdtool tune --alpha nan` stored NaN as alpha and `--deltapos inf`
   stored inf; all Holt-Winters and FAILURES parameters now refuse such
   values with "alpha must be a finite number, not 'nan'". Wherever
