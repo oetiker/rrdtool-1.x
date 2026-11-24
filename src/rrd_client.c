@@ -2415,6 +2415,7 @@ int rrd_client_dump(
     /* receive response from rrdcached, relay to output_cb */
     ssize_t received, written;
     ssize_t response_len = 0;
+    int     is_xml = 0;
     while (1) {
         received = recv(client->sd, buffer, sizeof(buffer), 0);
         if (received == -1L) {
@@ -2430,6 +2431,39 @@ int rrd_client_dump(
             reopen_connection(client);
             break; // EOF
         }
+        if (!is_xml) {
+            if (response_len == 0 && buffer[0] == '<') {
+                // an XML payload; the daemon closes the connection at its end
+                is_xml = 1;
+            } else {
+                // a status line instead of XML: the daemon refused the
+                // dump. Keep it out of the output and report it.
+                size_t n = (size_t) received;
+                char  *nl;
+
+                if (n > sizeof(resp_buffer) - 1 - (size_t) response_len)
+                    n = sizeof(resp_buffer) - 1 - (size_t) response_len;
+                memcpy(resp_buffer + response_len, buffer, n);
+                response_len += n;
+                resp_buffer[response_len] = '\0';
+                nl = strchr(resp_buffer, '\n');
+                if (nl == NULL
+                    && (size_t) response_len < sizeof(resp_buffer) - 1)
+                    continue; // we did not get a line (yet)
+                if (nl != NULL)
+                    *nl = '\0';
+                chomp(resp_buffer); // chomp away possible \r too
+                rrd_set_error("rrdc_dump: failed to dump: %s", resp_buffer);
+                /* the daemon answered with a single status line and keeps
+                 * the connection open, so it stays usable; without an end
+                 * of line in sight the rest of the reply would confuse
+                 * the next request */
+                if (nl == NULL)
+                    close_connection(client);
+                return -1;
+            }
+        }
+
         written = output_cb(buffer, received, cb_userdata);
         if (written != received) {
             rrd_set_error("rrdc_dump: unexpected number of bytes (%ld) "
@@ -2437,33 +2471,13 @@ int rrd_client_dump(
             close_connection(client);
             return -1;
         }
+    }
 
-        // gather the first response bytes to detect XML response or status
-        size_t remaining_response_len =
-            ((signed) sizeof(resp_buffer) - response_len) > written ? written
-            : (signed)sizeof(resp_buffer) - response_len;
-        if (remaining_response_len > 0) { // continuously append to response buffer
-            memcpy(resp_buffer+response_len, buffer, remaining_response_len);
-            response_len += remaining_response_len;
-        }
-
-        if (response_len < 1) continue; // unlikely empty write
-
-        // handle non-xml response (error)
-        if (resp_buffer[0] != '<') {
-            char *nl = (char *) memchr((void *) resp_buffer, '\n', response_len);
-            if (nl == NULL) {
-                continue; // we did not get a line (yet)
-            }
-            *nl = '\0'; // \0 terminate at newline
-            chomp(resp_buffer); // chomp away possible \r too
-            rrd_set_error("rrdc_dump: failed to dump: %s", resp_buffer);
-            /* the daemon answered with a single status line and keeps
-             * the connection open, so it stays usable */
-            return -1;
-        }
-        // if the response starts with `<` an XML payload is assumed and the connection
-        // will be shutdown from the daemon to indicate EOF.
+    if (!is_xml && response_len > 0) {
+        // the connection ended in the middle of a status line
+        chomp(resp_buffer);
+        rrd_set_error("rrdc_dump: failed to dump: %s", resp_buffer);
+        return -1;
     }
 
     return 0;

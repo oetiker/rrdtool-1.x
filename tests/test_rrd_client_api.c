@@ -72,6 +72,8 @@ int main(
     rrd_value_t *data;
     size_t    dumped;
     char      missing[4096];
+    char      err[4096];
+    int       rc;
 
     if (argc != 3) {
         fprintf(stderr, "usage: %s DAEMON-ADDRESS RRD-FILE\n", argv[0]);
@@ -162,11 +164,17 @@ int main(
     check(rrd_client_last(client, file) == start + 300,
           "rrd_client_last after dump");
 
-    /* a dump the daemon refuses must not drop the connection either */
+    /* a dump the daemon refuses must not drop the connection either;
+     * its error line is reported, not passed to the output callback as
+     * if it were part of the dump */
     dumped = 0;
-    check(rrd_client_dump(client, missing, "none", count_bytes,
-                          &dumped) != 0, "rrd_client_dump of missing file fails");
-    rrd_clear_error();
+    rc = rrd_client_dump(client, missing, "none", count_bytes, &dumped);
+    snprintf(err, sizeof(err), "%s", rrd_get_error());
+    check(rc != 0, "rrd_client_dump of missing file fails");
+    check(dumped == 0, "refused dump writes nothing to the output");
+    printf("refused dump error: %s\n", err);
+    check(strstr(err, "failed to stat") != NULL,
+          "refused dump reports the daemon's error");
     check(rrd_client_ping(client), "rrd_client_ping after failed dump");
 
     check(rrd_client_disconnect(client) == 0
